@@ -1,0 +1,1327 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ShopMate — Your Ultimate Shopping Destination</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        :root {
+            --primary: #2874f0;
+            --primary-dark: #1f63d6;
+            --accent: #ffb300;
+            --accent-dark: #e6a200;
+            --success: #10b981;
+            --danger: #ef4444;
+            --muted: #94a3b8;
+            --card: #ffffff;
+            --max-width: 1200px;
+            --radius: 12px;
+            --shadow-sm: 0 2px 8px rgba(11, 22, 60, 0.04);
+            --shadow-md: 0 8px 30px rgba(11, 22, 60, 0.08);
+            --shadow-lg: 0 18px 50px rgba(11, 22, 60, 0.12);
+        }
+
+        body {
+            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+            background: #f5f7fb;
+            color: #111;
+            overflow-x: hidden
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none
+        }
+
+        /* ========== HEADER STYLES ========== */
+        header.site-header {
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            position: sticky;
+            top: 0;
+            z-index: 1200;
+            padding: 12px 0;
+            box-shadow: 0 4px 20px rgba(16, 24, 40, 0.1);
+            transition: padding 0.3s ease, box-shadow 0.3s ease
+        }
+
+        header.site-header.scrolled {
+            padding: 8px 0;
+            box-shadow: 0 6px 30px rgba(16, 24, 40, 0.15)
+        }
+
+        .site-header .wrap {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px
+        }
+
+        .brand {
+            color: #fff;
+            font-weight: 800;
+            font-size: 1.4rem;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease
+        }
+
+        .brand:hover {
+            transform: scale(1.05)
+        }
+
+        .brand .logo-mark {
+            background: #fff;
+            color: var(--primary);
+            padding: 7px 10px;
+            border-radius: 10px;
+            margin-right: 10px;
+            font-weight: 800;
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3)
+        }
+
+        nav.primary {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        nav.primary a {
+            color: rgba(255, 255, 255, 0.9);
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            position: relative
+        }
+
+        nav.primary a::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%) scaleX(0);
+            width: 60%;
+            height: 2px;
+            background: #fff;
+            transition: transform 0.3s ease
+        }
+
+        nav.primary a:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff
+        }
+
+        nav.primary a:hover::after {
+            transform: translateX(-50%) scaleX(1)
+        }
+
+        .search {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            border-radius: 999px;
+            padding: 4px 6px;
+            overflow: hidden;
+            box-shadow: 0 6px 24px rgba(2, 6, 23, 0.1);
+            transition: all 0.3s ease;
+            flex: 1;
+            max-width: 400px
+        }
+
+        .search:focus-within {
+            box-shadow: 0 8px 32px rgba(2, 6, 23, 0.15);
+            transform: translateY(-1px)
+        }
+
+        .search input {
+            border: 0;
+            outline: 0;
+            padding: 10px 14px;
+            width: 100%;
+            font-size: 14px;
+            background: transparent
+        }
+
+        .search input::placeholder {
+            color: #94a3b8
+        }
+
+        .search button {
+            background: var(--accent);
+            border: 0;
+            padding: 10px 16px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1rem
+        }
+
+        .search button:hover {
+            background: var(--accent-dark);
+            transform: scale(1.1)
+        }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: 0;
+            color: #fff;
+            position: relative;
+            font-size: 1.3rem;
+            padding: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px)
+        }
+
+        .icon-btn:active {
+            transform: translateY(0)
+        }
+
+        .badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: var(--danger);
+            color: #fff;
+            font-size: 10px;
+            padding: 3px 7px;
+            border-radius: 999px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+            animation: pulse 2s infinite
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1)
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.1)
+            }
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 12px;
+            transition: all 0.3s ease
+        }
+
+        .profile:hover {
+            background: rgba(255, 255, 255, 0.15)
+        }
+
+        .profile .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #fff, #ffe680);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3)
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            right: 20px;
+            top: 70px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 16px 48px rgba(2, 6, 23, 0.2);
+            padding: 12px;
+            min-width: 200px;
+            display: none;
+            animation: slideDown 0.3s ease
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-15px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .dropdown-menu a {
+            display: block;
+            padding: 12px;
+            border-radius: 8px;
+            color: #111;
+            transition: all 0.2s ease;
+            font-weight: 500
+        }
+
+        .dropdown-menu a:hover {
+            background: #f1f5f9;
+            transform: translateX(5px)
+        }
+
+        .hamburger {
+            display: none;
+            background: transparent;
+            border: 0;
+            color: #fff;
+            font-size: 1.6rem;
+            cursor: pointer;
+            padding: 8px;
+            transition: transform 0.3s ease
+        }
+
+        .hamburger:hover {
+            transform: rotate(90deg)
+        }
+
+        .mobile-panel {
+            display: none;
+            background: #ffffff;
+            padding: 16px;
+            border-top: 1px solid rgba(2, 6, 23, 0.08);
+            animation: slideDown 0.3s ease
+        }
+
+        .mobile-panel.show {
+            display: block
+        }
+
+        .mobile-panel a {
+            display: block;
+            padding: 12px 10px;
+            color: #111;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            margin: 4px 0
+        }
+
+        .mobile-panel a:hover {
+            background: #f1f5f9;
+            transform: translateX(5px)
+        }
+
+        .mobile-search {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px
+        }
+
+        .mobile-search input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #e6eef8;
+            font-size: 14px;
+            transition: all 0.3s ease
+        }
+
+        .mobile-search input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(40, 116, 240, 0.1)
+        }
+
+        .mobile-search button {
+            background: var(--accent);
+            border: 0;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s ease
+        }
+
+        .mobile-search button:hover {
+            background: var(--accent-dark);
+            transform: scale(1.05)
+        }
+
+        /* ========== HERO SECTION ========== */
+        .hero {
+            min-height: 75vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background-image: linear-gradient(120deg, rgba(10, 25, 70, 0.65), rgba(40, 116, 240, 0.5)),
+                url('https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1600&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #fff;
+            padding: 80px 20px;
+            overflow: hidden
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 50%, rgba(255, 179, 0, 0.1), transparent 50%);
+            animation: pulseGlow 8s ease-in-out infinite
+        }
+
+        @keyframes pulseGlow {
+
+            0%,
+            100% {
+                opacity: 0.5
+            }
+
+            50% {
+                opacity: 0.8
+            }
+        }
+
+        .hero-inner {
+            max-width: 1100px;
+            text-align: center;
+            position: relative;
+            z-index: 1
+        }
+
+        .hero h1 {
+            font-size: 3.2rem;
+            margin-bottom: 16px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            line-height: 1.2
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 28px;
+            font-weight: 500;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2)
+        }
+
+        .cta {
+            display: inline-flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center
+        }
+
+        .btn-cta {
+            background: var(--accent);
+            border: 0;
+            padding: 16px 32px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            box-shadow: 0 10px 30px rgba(255, 179, 0, 0.25);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #111;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .btn-cta:hover {
+            background: var(--accent-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 14px 40px rgba(255, 179, 0, 0.35)
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            padding: 14px 30px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #fff
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #fff;
+            transform: translateY(-3px)
+        }
+
+        .hero-cats {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 24px
+        }
+
+        .hero-cats a {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 18px;
+            border-radius: 25px;
+            color: #fff;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 0.95rem
+        }
+
+        .hero-cats a:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2)
+        }
+
+        /* ========== PRODUCTS SECTION ========== */
+        .section {
+            max-width: var(--max-width);
+            margin: 60px auto;
+            padding: 0 20px
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 24px;
+            color: #111;
+            position: relative;
+            display: inline-block
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 2px
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+            gap: 24px
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 14px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.4s ease;
+            cursor: pointer;
+            border: 1px solid transparent
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+            border-color: rgba(40, 116, 240, 0.1)
+        }
+
+        .card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            background: #f0f0f0;
+            transition: transform 0.3s ease
+        }
+
+        .card:hover img {
+            transform: scale(1.05)
+        }
+
+        .title {
+            font-weight: 700;
+            margin-top: 12px;
+            font-size: 1rem;
+            color: #111;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        .category {
+            color: var(--muted);
+            font-size: 0.85rem;
+            margin-top: 4px;
+            text-transform: capitalize
+        }
+
+        .price {
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 1.2rem;
+            margin-top: 8px
+        }
+
+        .add-btn {
+            background: var(--primary);
+            color: #fff;
+            border: 0;
+            padding: 8px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            font-size: 0.9rem
+        }
+
+        .add-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 116, 240, 0.3)
+        }
+
+        .add-btn.added {
+            background: var(--success);
+            pointer-events: none;
+            animation: successPulse 0.5s ease
+        }
+
+        @keyframes successPulse {
+
+            0%,
+            100% {
+                transform: scale(1)
+            }
+
+            50% {
+                transform: scale(1.1)
+            }
+        }
+
+        .slider {
+            position: relative;
+            overflow: hidden;
+            border-radius: 14px;
+            background: #fff;
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 40px
+        }
+
+        .slider-track {
+            display: flex;
+            gap: 16px;
+            transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.2, 1)
+        }
+
+        .slide {
+            min-width: 240px;
+            background: linear-gradient(180deg, #fff, #f8fafc);
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent
+        }
+
+        .slide:hover {
+            transform: scale(1.05);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md)
+        }
+
+        .slide img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 10px
+        }
+
+        .slide-title {
+            font-weight: 700;
+            margin-top: 10px;
+            font-size: 1rem
+        }
+
+        .slide-desc {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-top: 4px
+        }
+
+        .slider-controls {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 12px;
+            right: 12px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none
+        }
+
+        .slider-controls button {
+            pointer-events: all;
+            background: rgba(255, 255, 255, 0.95);
+            border: 0;
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            font-weight: bold;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            color: var(--primary)
+        }
+
+        .slider-controls button:hover {
+            background: #fff;
+            transform: scale(1.15);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2)
+        }
+
+        footer.site-footer {
+            background: linear-gradient(180deg, #0b1220, #1a202c);
+            color: #cbd5e1;
+            padding: 50px 20px 30px;
+            margin-top: 80px
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 30px;
+            max-width: var(--max-width);
+            margin: 0 auto 30px
+        }
+
+        .footer-grid h4 {
+            color: #fff;
+            margin-bottom: 16px;
+            font-size: 1.1rem
+        }
+
+        .footer-grid a {
+            display: block;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            font-size: 0.95rem
+        }
+
+        .footer-grid a:hover {
+            color: #fff;
+            transform: translateX(5px)
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem
+        }
+
+        .fade-up {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s ease
+        }
+
+        .fade-up.show {
+            opacity: 1;
+            transform: translateY(0)
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+            font-size: 1.1rem
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--success);
+            color: #fff;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 2000;
+            animation: slideUp 0.3s ease
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .toast.show {
+            display: flex
+        }
+
+        /* ========== RESPONSIVE DESIGN ========== */
+        @media(max-width: 1024px) {
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                gap: 20px
+            }
+
+            .search {
+                max-width: 300px
+            }
+        }
+
+        @media(max-width: 880px) {
+            nav.primary {
+                display: none
+            }
+
+            .search {
+                display: none
+            }
+
+            .hamburger {
+                display: block
+            }
+
+            .hero h1 {
+                font-size: 2.2rem
+            }
+
+            .hero p {
+                font-size: 1.1rem
+            }
+
+            .section-title {
+                font-size: 1.5rem
+            }
+
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                gap: 16px
+            }
+        }
+
+        @media(max-width: 520px) {
+            .hero {
+                min-height: 60vh;
+                padding: 60px 16px;
+                background-attachment: scroll
+            }
+
+            .hero h1 {
+                font-size: 1.8rem
+            }
+
+            .hero p {
+                font-size: 1rem
+            }
+
+            .btn-cta,
+            .btn-outline {
+                padding: 12px 24px;
+                font-size: 0.95rem
+            }
+
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 12px
+            }
+
+            .card {
+                padding: 10px
+            }
+
+            .card img {
+                height: 150px
+            }
+
+            .site-header .wrap {
+                padding: 0 16px
+            }
+
+            .section {
+                padding: 0 16px
+            }
+
+            .toast {
+                bottom: 20px;
+                right: 20px;
+                left: 20px;
+                font-size: 0.9rem
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="site-header" id="mainHeader">
+        <div class="wrap">
+            <a class="brand" href="index.html">
+                <span class="logo-mark">SM</span> ShopMate
+            </a>
+
+            <nav class="primary">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="#products" class="nav-link">Products</a>
+                <a href="#deals" class="nav-link">Deals</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#contact" class="nav-link">Contact</a>
+            </nav>
+
+            <div class="search" role="search">
+                <input id="desktopSearch" placeholder="Search products, brands and more" aria-label="Search products" />
+                <button aria-label="Search" id="searchBtn">🔍</button>
+            </div>
+
+            <div class="actions">
+                <button class="icon-btn" id="wishlistBtn" title="Wishlist" aria-label="Wishlist">♡</button>
+                <button class="icon-btn" id="cartBtn" title="Cart" aria-label="Shopping cart">
+                    🛒 <span class="badge" id="cartCount">0</span>
+                </button>
+
+                <div style="position:relative">
+                    <div class="profile" id="profileBtn" aria-haspopup="true" aria-expanded="false" role="button"
+                        tabindex="0">
+                        <div class="avatar">S</div>
+                        <div class="d-none d-md-inline-block" style="color:rgba(255,255,255,0.95);font-weight:700">
+                            Surya
+                        </div>
+                    </div>
+
+                    <div class="dropdown-menu" id="profileMenu" role="menu">
+                        <a href="#" role="menuitem">👤 Your Account</a>
+                        <a href="#" role="menuitem">📦 Orders</a>
+                        <a href="#" role="menuitem">❤️ Saved Items</a>
+                        <hr style="border:none;border-top:1px solid #eef2f7;margin:8px 0">
+                        <a href="#" role="menuitem">🚪 Sign out</a>
+                    </div>
+                </div>
+
+                <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+            </div>
+        </div>
+
+        <div class="mobile-panel" id="mobilePanel">
+            <div class="mobile-search">
+                <input id="mobileSearch" placeholder="Search products..." aria-label="Search products" />
+                <button id="mobileSearchBtn">Go</button>
+            </div>
+            <a href="index.html">🏠 Home</a>
+            <a href="#products">🛍️ Products</a>
+            <a href="#deals">🔥 Deals</a>
+            <a href="#about">ℹ️ About</a>
+            <a href="#contact">📞 Contact</a>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="hero-inner">
+            <h1 class="fade-up">Biggest Sale of the Year!</h1>
+            <p class="fade-up" style="transition-delay:.1s">
+                Discover amazing deals on the latest products. Limited time only - Don't miss out!
+            </p>
+            <div class="cta fade-up" style="transition-delay:.2s">
+                <a class="btn-cta" href="#products">🛒 Shop Now</a>
+                <a class="btn-outline" href="#deals">View Deals</a>
+            </div>
+
+            <div class="hero-cats fade-up" style="transition-delay:.3s">
+                <a href="#electronics">📱 Electronics</a>
+                <a href="#fashion">👕 Fashion</a>
+                <a href="#home">🏡 Home</a>
+                <a href="#beauty">💄 Beauty</a>
+                <a href="#sports">⚽ Sports</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="products" class="section">
+        <h3 class="section-title">Shop by Category</h3>
+
+        <div class="slider" id="catSlider">
+            <div class="slider-track" id="catTrack">
+                <div class="slide">
+                    <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=60"
+                        alt="Smartphones">
+                    <div class="slide-title">📱 Smartphones</div>
+                    <div class="slide-desc">Latest models</div>
+                </div>
+                <div class="slide">
+                    <img src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=800&q=60"
+                        alt="Fashion">
+                    <div class="slide-title">👕 Fashion</div>
+                    <div class="slide-desc">Trending styles</div>
+                </div>
+                <div class="slide">
+                    <img src="https://images.unsplash.com/photo-1602810316977-38d5f3b9d2a5?auto=format&fit=crop&w=800&q=60"
+                        alt="Home">
+                    <div class="slide-title">🏡 Home</div>
+                    <div class="slide-desc">Essentials</div>
+                </div>
+                <div class="slide">
+                    <img src="https://images.unsplash.com/photo-1519744792095-2f2205e87b6f?auto=format&fit=crop&w=800&q=60"
+                        alt="Fitness">
+                    <div class="slide-title">⚽ Fitness</div>
+                    <div class="slide-desc">Gear & wearables</div>
+                </div>
+                <div class="slide">
+                    <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=60"
+                        alt="Beauty">
+                    <div class="slide-title">💄 Beauty</div>
+                    <div class="slide-desc">Top picks</div>
+                </div>
+            </div>
+            <div class="slider-controls">
+                <button id="catPrev" aria-label="Previous">‹</button>
+                <button id="catNext" aria-label="Next">›</button>
+            </div>
+        </div>
+
+        <h3 class="section-title">Featured Products</h3>
+        <div class="grid" id="productGrid">
+            <div class="loading">Loading products...</div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="footer-grid">
+            <div>
+                <h4>ShopMate</h4>
+                <p style="color:var(--muted);font-size:.95rem;line-height:1.6">
+                    Your trusted online store with fast delivery, amazing deals, and exceptional customer service.
+                </p>
+            </div>
+            <div>
+                <h4>Support</h4>
+                <a href="#">Help Center</a>
+                <a href="#">Returns & Refunds</a>
+                <a href="#">Shipping Info</a>
+                <a href="#">Track Order</a>
+            </div>
+            <div>
+                <h4>Company</h4>
+                <a href="#">About Us</a>
+                <a href="#">Careers</a>
+                <a href="#">Press</a>
+                <a href="#">Blog</a>
+            </div>
+            <div>
+                <h4>Connect</h4>
+                <a href="#">Contact Us</a>
+                <a href="#">Partners</a>
+                <a href="#">Facebook</a>
+                <a href="#">Instagram</a>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            © 2025 ShopMate — All rights reserved. Made with ❤️ for shoppers worldwide.
+        </div>
+    </footer>
+
+    <div class="toast" id="toast">
+        <span style="font-size:1.5rem">✓</span>
+        <span id="toastMessage">Item added to cart!</span>
+    </div>
+
+    <script>
+        let products = [];
+
+        const header = document.getElementById('mainHeader');
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 100) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        const hamburger = document.getElementById('hamburger');
+        const mobilePanel = document.getElementById('mobilePanel');
+        hamburger.addEventListener('click', () => {
+            mobilePanel.classList.toggle('show');
+            hamburger.textContent = mobilePanel.classList.contains('show') ? '✕' : '☰';
+        });
+
+        mobilePanel.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobilePanel.classList.remove('show');
+                hamburger.textContent = '☰';
+            });
+        });
+
+        const profileBtn = document.getElementById('profileBtn');
+        const profileMenu = document.getElementById('profileMenu');
+        profileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = profileMenu.style.display === 'block';
+            profileMenu.style.display = isOpen ? 'none' : 'block';
+            profileBtn.setAttribute('aria-expanded', !isOpen);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!profileBtn.contains(e.target) && !profileMenu.contains(e.target)) {
+                profileMenu.style.display = 'none';
+                profileBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        function performSearch(query) {
+            if (!query.trim()) return;
+            const filtered = products.filter(p =>
+                p.title.toLowerCase().includes(query.toLowerCase()) ||
+                p.category.toLowerCase().includes(query.toLowerCase())
+            );
+            displayProducts(filtered);
+            document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
+            showToast(`Found ${filtered.length} products for "${query}"`);
+        }
+
+        document.getElementById('searchBtn').addEventListener('click', () => {
+            performSearch(document.getElementById('desktopSearch').value);
+        });
+
+        document.getElementById('desktopSearch').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch(e.target.value);
+        });
+
+        document.getElementById('mobileSearchBtn').addEventListener('click', () => {
+            performSearch(document.getElementById('mobileSearch').value);
+            mobilePanel.classList.remove('show');
+            hamburger.textContent = '☰';
+        });
+
+        document.getElementById('mobileSearch').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch(e.target.value);
+                mobilePanel.classList.remove('show');
+                hamburger.textContent = '☰';
+            }
+        });
+
+        async function loadProducts() {
+            const grid = document.getElementById('productGrid');
+            try {
+                const res = await fetch('https://dummyjson.com/products?limit=100');
+                const data = await res.json();
+                products = data.products || [];
+                displayProducts(products);
+            } catch (err) {
+                grid.innerHTML = '<div class="loading" style="color:var(--danger)">⚠️ Failed to load products. Please try again.</div>';
+                console.error('Error loading products:', err);
+            }
+        }
+
+        function displayProducts(productsToShow) {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = '';
+
+            if (productsToShow.length === 0) {
+                grid.innerHTML = '<div class="loading">No products found. Try a different search.</div>';
+                return;
+            }
+
+            productsToShow.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'card fade-up';
+                card.onclick = () => navigateToProduct(p.id);
+                card.innerHTML = `
+                    <img src="${p.thumbnail}" alt="${p.title}" loading="lazy">
+                    <div class="title">${p.title}</div>
+                    <div class="category">${p.category}</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
+                        <div class="price">₹${Math.round(p.price * 83).toLocaleString()}</div>
+                        <button data-id="${p.id}" class="add-btn" onclick="event.stopPropagation(); addToCart(${p.id})">Add to Cart</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            setTimeout(() => {
+                document.querySelectorAll('.card.fade-up').forEach((card, index) => {
+                    setTimeout(() => card.classList.add('show'), index * 50);
+                });
+            }, 100);
+        }
+
+        function navigateToProduct(productId) {
+            window.location.href = `/pages/product.html?id=${productId}`;
+        }
+
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+
+            let cartData = JSON.parse(sessionStorage.getItem('cartData')) || [];
+            const existingItem = cartData.find(item => item.productId === id);
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cartData.push({
+                    id: 'cart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                    productId: id,
+                    quantity: 1
+                });
+            }
+
+            sessionStorage.setItem('cartData', JSON.stringify(cartData));
+            updateCartBadge();
+
+            const btn = document.querySelector(`button[data-id="${id}"]`);
+            if (btn) {
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Added';
+                btn.classList.add('added');
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('added');
+                }, 2000);
+            }
+
+            showToast(`${product.title} added to cart!`);
+        }
+
+        function updateCartBadge() {
+            let cartData = JSON.parse(sessionStorage.getItem('cartData')) || [];
+            const totalItems = cartData.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartCount').textContent = totalItems;
+        }
+
+        document.getElementById('cartBtn').addEventListener('click', () => {
+            window.location.href = '/pages/cart.html';
+        });
+
+        document.getElementById('wishlistBtn').addEventListener('click', () => {
+            showToast('Wishlist feature coming soon! ❤️');
+        });
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            toastMessage.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        const track = document.getElementById('catTrack');
+        const prevBtn = document.getElementById('catPrev');
+        const nextBtn = document.getElementById('catNext');
+        let slideIndex = 0;
+        const slideWidth = 256;
+        let autoInterval;
+
+        function updateSlider() {
+            track.style.transform = `translateX(${-slideIndex * slideWidth}px)`;
+        }
+
+        prevBtn.addEventListener('click', () => {
+            slideIndex = Math.max(0, slideIndex - 1);
+            updateSlider();
+            resetAutoSlide();
+        });
+
+        nextBtn.addEventListener('click', () => {
+            const maxIndex = Math.max(0, track.children.length - Math.floor(track.parentElement.offsetWidth / slideWidth));
+            slideIndex = Math.min(maxIndex, slideIndex + 1);
+            updateSlider();
+            resetAutoSlide();
+        });
+
+        function autoSlide() {
+            const maxIndex = Math.max(0, track.children.length - Math.floor(track.parentElement.offsetWidth / slideWidth));
+            slideIndex = slideIndex >= maxIndex ? 0 : slideIndex + 1;
+            updateSlider();
+        }
+
+        function resetAutoSlide() {
+            clearInterval(autoInterval);
+            autoInterval = setInterval(autoSlide, 4000);
+        }
+
+        autoInterval = setInterval(autoSlide, 4000);
+        track.addEventListener('mouseenter', () => clearInterval(autoInterval));
+        track.addEventListener('mouseleave', resetAutoSlide);
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('show');
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -80px 0px' });
+
+        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href === '#') return;
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProducts();
+            updateCartBadge();
+            setTimeout(() => {
+                document.querySelectorAll('.hero .fade-up').forEach(el => el.classList.add('show'));
+            }, 200);
+        });
+
+        window.addEventListener('beforeunload', () => clearInterval(autoInterval));
+    </script>
+</body>
+
+</html>
