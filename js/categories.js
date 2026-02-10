@@ -7,13 +7,11 @@
 if (typeof window.API_BASE_URL === 'undefined') {
     window.API_BASE_URL = 'https://dummyjson.com';
 }
-// Removed unused CART_BASE_URL variable
 
 const CATEGORY_API = `${API_BASE_URL}/products/categories`;
 const CATEGORY_PRODUCT_API = (category) => `${API_BASE_URL}/products/category/${encodeURIComponent(category)}`;
 
 // CATEGORY IMAGES - Map each category to a relevant image (FIXED URLs)
-// Consolidated duplicate entries
 const CATEGORY_IMAGES = {
     electronics: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
     jewelery: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
@@ -24,6 +22,9 @@ const CATEGORY_IMAGES = {
     furniture: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
     groceries: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
     sports: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+    automotive: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+    lighting: 'https://images.unsplash.com/photo-1558618666917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+    skincare: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
     default: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'
 };
 
@@ -46,7 +47,9 @@ function getCategoryImage(category) {
     const categoryMap = {
         'jewelry': 'jewelery',
         'mens clothing': "men's clothing",
-        'womens clothing': "women's clothing"
+        'womens clothing': "women's clothing",
+        'mens-fashion': "men's clothing",
+        'womens-fashion': "women's clothing"
     };
 
     const normalizedKey = categoryMap[key] || key;
@@ -67,10 +70,15 @@ function formatCategoryName(category) {
         return 'Unknown';
     }
 
-    return categoryName
+    // Convert kebab-case to readable text
+    categoryName = categoryName
+        .replace(/-/g, ' ')
+        .replace(/'s/g, "'s")
         .split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
+
+    return categoryName;
 }
 
 // Generate star rating HTML
@@ -138,6 +146,11 @@ function createCategoryCard(category) {
 
 // Create product card for categories page
 function createProductCardForCategory(product) {
+    if (!product || typeof product !== 'object') {
+        console.error('Invalid product:', product);
+        return '<div class="col"><p>Invalid product data</p></div>';
+    }
+
     const description = product.description ?
         product.description.substring(0, 60) + (product.description.length > 60 ? '...' : '') :
         'No description available';
@@ -149,7 +162,7 @@ function createProductCardForCategory(product) {
         imageUrl = getCategoryImage(product.category) || 'https://via.placeholder.com/300x200/6c757d/ffffff?text=Product';
     }
 
-    const placeholderUrl = `https://via.placeholder.com/300x200/e9ecef/666666?text=${encodeURIComponent(product.title.substring(0, 20))}`;
+    const placeholderUrl = `https://via.placeholder.com/300x200/e9ecef/666666?text=${encodeURIComponent((product.title || 'Product').substring(0, 20))}`;
     const rating = typeof product.rating === 'number' ? product.rating : 0;
     const stars = generateStarRating(rating);
     const stock = product.stock || product.quantity || 5;
@@ -159,7 +172,7 @@ function createProductCardForCategory(product) {
             <div class="position-relative" style="height: 200px; overflow: hidden; background-color: #f8f9fa;">
                 <img src="${imageUrl}" 
                      class="card-img-top w-100 h-100" 
-                     alt="${product.title}"
+                     alt="${product.title || 'Product'}"
                      style="object-fit: cover; transition: transform 0.3s ease;"
                      loading="lazy"
                      onerror="this.src='${placeholderUrl}'; this.style.objectFit='contain'; this.style.padding='10px';">
@@ -170,15 +183,15 @@ function createProductCardForCategory(product) {
                 </div>
             </div>
             <div class="card-body d-flex flex-column p-3">
-                <h6 class="card-title fw-bold mb-2" title="${product.title}">${product.title}</h6>
+                <h6 class="card-title fw-bold mb-2" title="${product.title || 'Product'}">${product.title || 'Untitled Product'}</h6>
                 <p class="card-text text-muted small flex-grow-1 mb-2">${description}</p>
                 <div class="mb-2">
                     <small class="text-warning">${stars}</small>
                     <small class="text-muted ms-1">(${rating.toFixed(1)})</small>
                 </div>
                 <div class="d-flex justify-content-between align-items-center mt-auto">
-                    <span class="text-primary fw-bold fs-5">${formatPrice(product.price)}</span>
-                    <button class="btn btn-sm btn-primary add-to-cart" data-id="${product.id}" data-title="${product.title}" title="Add to cart">
+                    <span class="text-primary fw-bold fs-5">${formatPrice(product.price || 0)}</span>
+                    <button class="btn btn-sm btn-primary add-to-cart" data-id="${product.id || ''}" data-title="${product.title || ''}" title="Add to cart">
                         <i class="fas fa-cart-plus"></i> Add
                     </button>
                 </div>
@@ -234,11 +247,37 @@ async function loadFeaturedCategories() {
     showLoading(container, 'Loading categories...');
 
     try {
+        console.log('Fetching categories from:', CATEGORY_API);
         const response = await fetch(CATEGORY_API);
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
+
         const categories = await response.json();
+        console.log('Categories response:', categories);
+
+        // Check if categories is an array
+        if (!Array.isArray(categories)) {
+            console.error('Categories is not an array:', categories);
+
+            // Try to handle different response formats
+            if (categories && typeof categories === 'object') {
+                // Maybe it's an object with categories property
+                if (Array.isArray(categories.categories)) {
+                    categories = categories.categories;
+                } else {
+                    // Try to convert object keys to array
+                    categories = Object.values(categories);
+                }
+            }
+
+            // If still not an array, use fallback categories
+            if (!Array.isArray(categories)) {
+                console.log('Using fallback categories');
+                categories = ["electronics", "jewelery", "men's clothing", "women's clothing", "fragrances", "groceries", "furniture", "beauty"];
+            }
+        }
 
         container.innerHTML = '';
 
@@ -256,6 +295,8 @@ async function loadFeaturedCategories() {
             return;
         }
 
+        console.log('Displaying featured categories:', featuredCategories);
+
         featuredCategories.forEach((category, index) => {
             const col = document.createElement('div');
             col.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
@@ -267,16 +308,24 @@ async function loadFeaturedCategories() {
         console.log(`Loaded ${featuredCategories.length} categories`);
     } catch (error) {
         console.error('Error loading categories:', error);
-        container.innerHTML = `
-            <div class="col-12 text-center py-5">
-                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
-                <h4>Failed to load categories</h4>
-                <p class="text-muted">Please check your connection and try again</p>
-                <button onclick="loadFeaturedCategories()" class="btn btn-primary mt-3">
-                    <i class="fas fa-redo me-2"></i>Retry
-                </button>
-            </div>
-        `;
+
+        // Use fallback categories on error
+        const fallbackCategories = [
+            "electronics", "jewelery", "men's clothing", "women's clothing",
+            "fragrances", "groceries", "furniture", "beauty"
+        ];
+
+        container.innerHTML = '';
+
+        fallbackCategories.forEach((category, index) => {
+            const col = document.createElement('div');
+            col.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
+            col.style.animation = `fadeIn 0.5s ease-out ${index * 0.1}s both`;
+            col.innerHTML = createCategoryCard(category);
+            container.appendChild(col);
+        });
+
+        console.log(`Loaded ${fallbackCategories.length} fallback categories`);
     }
 }
 
@@ -294,11 +343,42 @@ async function loadAllCategoryCards() {
     showLoading(container, 'Loading categories...');
 
     try {
+        console.log('Fetching all categories from:', CATEGORY_API);
         const response = await fetch(CATEGORY_API);
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const categories = await response.json();
+
+        let categories = await response.json();
+        console.log('All categories response:', categories);
+
+        // Check if categories is an array
+        if (!Array.isArray(categories)) {
+            console.warn('Categories is not an array, attempting to fix...');
+
+            if (categories && typeof categories === 'object') {
+                // Check for nested array
+                if (Array.isArray(categories.categories)) {
+                    categories = categories.categories;
+                } else if (Array.isArray(categories.data)) {
+                    categories = categories.data;
+                } else {
+                    // Convert object to array of category names
+                    categories = Object.keys(categories).map(key => {
+                        const value = categories[key];
+                        return typeof value === 'string' ? value : key;
+                    });
+                }
+            }
+
+            // Fallback if still not an array
+            if (!Array.isArray(categories)) {
+                categories = ["electronics", "jewelery", "men's clothing", "women's clothing",
+                    "fragrances", "groceries", "furniture", "beauty", "sports",
+                    "automotive", "lighting", "skincare"];
+            }
+        }
 
         container.innerHTML = '';
 
@@ -312,6 +392,8 @@ async function loadAllCategoryCards() {
             `;
             return;
         }
+
+        console.log('Displaying all categories:', categories);
 
         categories.forEach((category, index) => {
             const col = document.createElement('div');
@@ -371,6 +453,7 @@ async function loadCategoryProducts(category) {
     showLoading(container, `Loading ${categoryName} products...`);
 
     try {
+        console.log('Fetching category products from:', CATEGORY_PRODUCT_API(category));
         const response = await fetch(CATEGORY_PRODUCT_API(category));
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -401,7 +484,7 @@ function displayCategoryProductsGrid(products) {
 
     container.innerHTML = '';
 
-    if (products.length === 0) {
+    if (!Array.isArray(products) || products.length === 0) {
         container.innerHTML = `
             <div class="col-12 text-center py-5">
                 <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
@@ -419,6 +502,11 @@ function displayCategoryProductsGrid(products) {
     row.className = 'row';
 
     products.forEach((product, index) => {
+        if (!product || typeof product !== 'object') {
+            console.warn('Skipping invalid product at index', index, product);
+            return;
+        }
+
         const col = document.createElement('div');
         col.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
         col.style.animation = `fadeIn 0.5s ease-out ${index * 0.05}s both`;
@@ -580,6 +668,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 100);
 });
 
+// Make functions globally available
+window.loadFeaturedCategories = loadFeaturedCategories;
+window.loadAllCategoryCards = loadAllCategoryCards;
+window.loadCategoryProducts = loadCategoryProducts;
+window.formatCategoryName = formatCategoryName;
+
+// Fallback categories in case API fails
+const FALLBACK_CATEGORIES = [
+    "electronics", "jewelery", "men's clothing", "women's clothing",
+    "fragrances", "groceries", "furniture", "beauty", "sports",
+    "automotive", "lighting", "skincare"
+];
+
 // Export functions for use in other modules (if using modules)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -589,6 +690,7 @@ if (typeof module !== 'undefined' && module.exports) {
         getCategoryImage,
         formatCategoryName,
         generateStarRating,
-        formatPrice
+        formatPrice,
+        FALLBACK_CATEGORIES
     };
 }

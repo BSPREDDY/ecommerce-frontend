@@ -43,8 +43,24 @@
             overflow: hidden;
         }
 
+        #formMessage.alert {
+            display: block;
+        }
+
+        #formMessage {
+            display: none;
+        }
+
+        .form-control.is-valid {
+            border-color: #198754 !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(.375em + .1875rem) center;
+            background-size: calc(.75em + .375rem) calc(.75em + .375rem);
+        }
+
         .form-control.is-invalid {
-            border-color: var(--danger-color);
+            border-color: #dc3545 !important;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
             background-repeat: no-repeat;
             background-position: right calc(.375em + .1875rem) center;
@@ -52,9 +68,10 @@
         }
 
         .error-message {
-            color: var(--danger-color);
+            color: #dc3545 !important;
             font-size: 0.875rem;
             margin-top: 0.25rem;
+            display: none;
         }
     </style>
 </head>
@@ -123,190 +140,197 @@
                 </div>
             </div>
 
-            <div class="row">
-                <!-- Contact Form -->
-                <div class="col-lg-7 mb-5">
-                    <div class="card">
-                        <div class="card-body">
-                            <h3 class="card-title mb-4">Send us a Message</h3>
-                            <p class="text-muted mb-4">Have questions? Fill out the form below and we'll get back to you
-                                as soon as possible.</p>
+            <!-- Updated Contact Form Section in contact.html -->
+            <div class="col-lg-7 mb-5">
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title mb-4">Send us a Message</h3>
+                        <p class="text-muted mb-4">Have questions? Fill out the form below and we'll get back to you as
+                            soon as possible.</p>
 
-                            <form id="contactForm">
-                                <div id="formMessage" class="alert d-none" role="alert"></div>
+                        <!-- Form Message Area - Fixed -->
+                        <div id="formMessage" class="alert d-none" role="alert" style="display: none;"></div>
 
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label for="name" class="form-label">Full Name *</label>
-                                        <input type="text" class="form-control" id="name" required>
-                                        <div id="nameError" class="error-message"></div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="email" class="form-label">Email Address *</label>
-                                        <input type="email" class="form-control" id="email" required>
-                                        <div id="emailError" class="error-message"></div>
-                                    </div>
+                        <form id="contactForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="name" class="form-label">Full Name *</label>
+                                    <input type="text" class="form-control" id="name" required>
+                                    <!-- Error Message - Fixed -->
+                                    <small id="nameError" class="error-message text-danger"
+                                        style="display: none;"></small>
                                 </div>
-
-                                <div class="mb-3">
-                                    <label for="subject" class="form-label">Subject *</label>
-                                    <input type="text" class="form-control" id="subject" required>
-                                    <div id="subjectError" class="error-message"></div>
+                                <div class="col-md-6">
+                                    <label for="email" class="form-label">Email Address *</label>
+                                    <input type="email" class="form-control" id="email" required>
+                                    <!-- Error Message - Fixed -->
+                                    <small id="emailError" class="error-message text-danger"
+                                        style="display: none;"></small>
                                 </div>
+                            </div>
 
-                                <div class="mb-3">
-                                    <label for="message" class="form-label">Message *</label>
-                                    <textarea class="form-control" id="message" rows="5" required></textarea>
-                                    <div id="messageError" class="error-message"></div>
+                            <div class="mb-3">
+                                <label for="subject" class="form-label">Subject *</label>
+                                <input type="text" class="form-control" id="subject" required>
+                                <!-- Error Message - Fixed -->
+                                <small id="subjectError" class="error-message text-danger"
+                                    style="display: none;"></small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="message" class="form-label">Message *</label>
+                                <textarea class="form-control" id="message" rows="5" required></textarea>
+                                <!-- Error Message - Fixed -->
+                                <small id="messageError" class="error-message text-danger"
+                                    style="display: none;"></small>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="newsletter">
+                                    <label class="form-check-label" for="newsletter">
+                                        Subscribe to our newsletter for updates and promotions
+                                    </label>
                                 </div>
+                            </div>
 
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="newsletter">
-                                        <label class="form-check-label" for="newsletter">
-                                            Subscribe to our newsletter for updates and promotions
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="fas fa-paper-plane me-2"></i>Send Message
-                                </button>
-                            </form>
-                        </div>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i>Send Message
+                            </button>
+                        </form>
                     </div>
                 </div>
+            </div>
 
-                <!-- FAQ & Map -->
-                <div class="col-lg-5">
-                    <!-- FAQ -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h4 class="card-title mb-3">Frequently Asked Questions</h4>
-                            <div class="accordion" id="faqAccordion">
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header">
-                                        <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                                            data-bs-target="#faq1">
-                                            How can I track my order?
-                                        </button>
-                                    </h2>
-                                    <div id="faq1" class="accordion-collapse collapse show"
-                                        data-bs-parent="#faqAccordion">
-                                        <div class="accordion-body">
-                                            You can track your order by logging into your account and visiting the
-                                            "Order History" section. You'll receive tracking information via email once
-                                            your order ships.
-                                        </div>
+            <!-- FAQ & Map -->
+            <div class="col-lg-5">
+                <!-- FAQ -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h4 class="card-title mb-3">Frequently Asked Questions</h4>
+                        <div class="accordion" id="faqAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#faq1">
+                                        How can I track my order?
+                                    </button>
+                                </h2>
+                                <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        You can track your order by logging into your account and visiting the
+                                        "Order History" section. You'll receive tracking information via email once
+                                        your order ships.
                                     </div>
                                 </div>
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header">
-                                        <button class="accordion-button collapsed" type="button"
-                                            data-bs-toggle="collapse" data-bs-target="#faq2">
-                                            What is your return policy?
-                                        </button>
-                                    </h2>
-                                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                        <div class="accordion-body">
-                                            We offer a 30-day return policy for most items. Products must be in original
-                                            condition with all tags attached. Some items may have different return
-                                            conditions.
-                                        </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#faq2">
+                                        What is your return policy?
+                                    </button>
+                                </h2>
+                                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        We offer a 30-day return policy for most items. Products must be in original
+                                        condition with all tags attached. Some items may have different return
+                                        conditions.
                                     </div>
                                 </div>
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header">
-                                        <button class="accordion-button collapsed" type="button"
-                                            data-bs-toggle="collapse" data-bs-target="#faq3">
-                                            Do you ship internationally?
-                                        </button>
-                                    </h2>
-                                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                        <div class="accordion-body">
-                                            Yes, we ship to over 50 countries. Shipping costs and delivery times vary by
-                                            location. You can see estimated shipping costs at checkout.
-                                        </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#faq3">
+                                        Do you ship internationally?
+                                    </button>
+                                </h2>
+                                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Yes, we ship to over 50 countries. Shipping costs and delivery times vary by
+                                        location. You can see estimated shipping costs at checkout.
                                     </div>
                                 </div>
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header">
-                                        <button class="accordion-button collapsed" type="button"
-                                            data-bs-toggle="collapse" data-bs-target="#faq4">
-                                            How do I contact customer support?
-                                        </button>
-                                    </h2>
-                                    <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                        <div class="accordion-body">
-                                            You can contact us via this contact form, email at support@shopeasy.com, or
-                                            call us at +1 (234) 567-8900 during business hours.
-                                        </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#faq4">
+                                        How do I contact customer support?
+                                    </button>
+                                </h2>
+                                <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        You can contact us via this contact form, email at support@shopeasy.com, or
+                                        call us at +1 (234) 567-8900 during business hours.
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Map -->
-                    <div class="card">
-                        <div class="card-body">
-                            <h4 class="card-title mb-3">Our Location</h4>
-                            <div id="map">
-                                <!-- Map placeholder -->
-                                <div
-                                    style="height: 300px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; color: #666;">
-                                    <div class="text-center">
-                                        <i class="fas fa-map-marked-alt fa-3x mb-3"></i>
-                                        <p>Map Integration Available</p>
-                                    </div>
+                <!-- Map -->
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title mb-3">Our Location</h4>
+                        <div id="map">
+                            <!-- Map placeholder -->
+                            <div
+                                style="height: 300px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; color: #666;">
+                                <div class="text-center">
+                                    <i class="fas fa-map-marked-alt fa-3x mb-3"></i>
+                                    <p>Map Integration Available</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Business Hours -->
-            <div class="row mt-5">
-                <div class="col-md-8 mx-auto">
-                    <div class="card">
-                        <div class="card-body">
-                            <h4 class="card-title mb-4">Business Hours</h4>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <table class="table">
-                                        <tbody>
-                                            <tr>
-                                                <th>Monday - Friday</th>
-                                                <td>9:00 AM - 6:00 PM EST</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Saturday</th>
-                                                <td>10:00 AM - 4:00 PM EST</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Sunday</th>
-                                                <td>Closed</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div class="col-md-6">
-                                    <p class="mb-3">For urgent matters outside business hours, please email us at
-                                        <strong>emergency@shopeasy.com</strong> and we'll respond as soon as possible.
-                                    </p>
-                                    <div class="alert alert-info">
-                                        <small>
-                                            <i class="fas fa-info-circle me-1"></i>
-                                            Response time is typically within 24 hours during business days.
-                                        </small>
-                                    </div>
+        <!-- Business Hours -->
+        <div class="row mt-5">
+            <div class="col-md-8 mx-auto">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title mb-4">Business Hours</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table">
+                                    <tbody>
+                                        <tr>
+                                            <th>Monday - Friday</th>
+                                            <td>9:00 AM - 6:00 PM EST</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Saturday</th>
+                                            <td>10:00 AM - 4:00 PM EST</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Sunday</th>
+                                            <td>Closed</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-3">For urgent matters outside business hours, please email us at
+                                    <strong>emergency@shopeasy.com</strong> and we'll respond as soon as possible.
+                                </p>
+                                <div class="alert alert-info">
+                                    <small>
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Response time is typically within 24 hours during business days.
+                                    </small>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </section>
 

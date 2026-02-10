@@ -7,8 +7,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const signupForm = document.getElementById('signupForm');
     const loginToggleBtn = document.getElementById('loginToggleBtn');
     const signupToggleBtn = document.getElementById('signupToggleBtn');
-    const loginToggleText = document.getElementById('loginToggleText');
-    const signupToggleText = document.getElementById('signupToggleText');
     const loginEmail = document.getElementById('loginEmail');
     const loginPassword = document.getElementById('loginPassword');
     const signupName = document.getElementById('signupName');
@@ -76,13 +74,19 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Form submission
+    // Form submission - FIXED
     if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
+        loginForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            handleLogin(e);
+        });
     }
 
     if (signupForm) {
-        signupForm.addEventListener('submit', handleSignup);
+        signupForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            handleSignup(e);
+        });
     }
 
     // Forgot password
@@ -106,11 +110,17 @@ function showLoginForm() {
     const authTitle = document.getElementById('authTitle');
     const authSubtitle = document.getElementById('authSubtitle');
 
-    if (loginForm) loginForm.classList.remove('form-hidden');
+    if (loginForm) {
+        loginForm.classList.remove('form-hidden');
+        loginForm.reset();
+    }
     if (signupForm) signupForm.classList.add('form-hidden');
     if (authTitle) authTitle.textContent = "Welcome Back";
     if (authSubtitle) authSubtitle.textContent = "Please login to your account";
     document.title = "ShopEasy - Login";
+
+    // Clear messages
+    clearMessages();
 }
 
 function showSignupForm() {
@@ -119,11 +129,32 @@ function showSignupForm() {
     const authTitle = document.getElementById('authTitle');
     const authSubtitle = document.getElementById('authSubtitle');
 
-    if (signupForm) signupForm.classList.remove('form-hidden');
+    if (signupForm) {
+        signupForm.classList.remove('form-hidden');
+        signupForm.reset();
+    }
     if (loginForm) loginForm.classList.add('form-hidden');
     if (authTitle) authTitle.textContent = "Create Account";
     if (authSubtitle) authSubtitle.textContent = "Sign up to get started";
     document.title = "ShopEasy - Sign Up";
+
+    // Clear messages and reset password strength
+    clearMessages();
+    if (passwordStrengthMeter) {
+        passwordStrengthMeter.style.width = '0%';
+        passwordStrengthMeter.className = 'password-strength-meter';
+    }
+    if (passwordRequirements) {
+        passwordRequirements.innerHTML = '';
+    }
+}
+
+function clearMessages() {
+    const messages = document.querySelectorAll('.message');
+    messages.forEach(msg => {
+        msg.style.display = 'none';
+        msg.textContent = '';
+    });
 }
 
 function checkPasswordStrength(password) {
@@ -221,8 +252,9 @@ function showMessage(elementId, message, type) {
     }, 5000);
 }
 
+// FIXED login function
 async function handleLogin(e) {
-    e.preventDefault();
+    e.preventDefault(); // Prevent default form submission
 
     const email = document.getElementById('loginEmail')?.value;
     const password = document.getElementById('loginPassword')?.value;
@@ -250,8 +282,18 @@ async function handleLogin(e) {
     submitBtn.disabled = true;
 
     try {
-        // Firebase login
-        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+        // Firebase login - using modular syntax if available
+        let userCredential;
+        if (firebase.auth && firebase.auth().signInWithEmailAndPassword) {
+            // Compatible with older Firebase SDK
+            userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+        } else {
+            // For Firebase v9+ modular SDK
+            const { getAuth, signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js');
+            const auth = getAuth();
+            userCredential = await signInWithEmailAndPassword(auth, email, password);
+        }
+
         const user = userCredential.user;
 
         // Store user info
@@ -263,10 +305,10 @@ async function handleLogin(e) {
 
         showMessage('loginMessage', 'Login successful! Redirecting...', 'success');
 
-        // Redirect after delay
+        // Redirect after delay - FIXED: Don't use setTimeout for immediate redirect
         setTimeout(() => {
             window.location.href = 'index.html';
-        }, 2000);
+        }, 1000);
 
     } catch (error) {
         let errorMessage = 'Login failed. ';
@@ -284,6 +326,9 @@ async function handleLogin(e) {
             case 'auth/user-disabled':
                 errorMessage += 'This account has been disabled.';
                 break;
+            case 'auth/too-many-requests':
+                errorMessage += 'Too many failed attempts. Please try again later.';
+                break;
             default:
                 errorMessage += error.message;
         }
@@ -296,8 +341,9 @@ async function handleLogin(e) {
     }
 }
 
+// FIXED signup function
 async function handleSignup(e) {
-    e.preventDefault();
+    e.preventDefault(); // Prevent default form submission
 
     const name = document.getElementById('signupName')?.value;
     const email = document.getElementById('signupEmail')?.value;
@@ -332,7 +378,15 @@ async function handleSignup(e) {
 
     try {
         // Firebase signup
-        const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+        let userCredential;
+        if (firebase.auth && firebase.auth().createUserWithEmailAndPassword) {
+            userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+        } else {
+            const { getAuth, createUserWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js');
+            const auth = getAuth();
+            userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        }
+
         const user = userCredential.user;
 
         // Update profile
@@ -352,7 +406,7 @@ async function handleSignup(e) {
         // Redirect after delay
         setTimeout(() => {
             window.location.href = 'index.html';
-        }, 2000);
+        }, 1000);
 
     } catch (error) {
         let errorMessage = 'Signup failed. ';
@@ -384,7 +438,13 @@ async function handleSignup(e) {
 
 async function resetPassword(email) {
     try {
-        await firebase.auth().sendPasswordResetEmail(email);
+        if (firebase.auth && firebase.auth().sendPasswordResetEmail) {
+            await firebase.auth().sendPasswordResetEmail(email);
+        } else {
+            const { getAuth, sendPasswordResetEmail } = await import('https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js');
+            const auth = getAuth();
+            await sendPasswordResetEmail(auth, email);
+        }
         alert('Password reset email sent! Please check your inbox.');
     } catch (error) {
         alert('Error sending reset email: ' + error.message);
