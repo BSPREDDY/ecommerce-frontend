@@ -1,17 +1,16 @@
-// categories.js - Category Management Module
+// categories.js - Category Management Module - FIXED
 // ===============================
 // Category Management Module
 // ===============================
 
-// Ensure API_BASE_URL is declared globally (from products.js)
+// Ensure API_BASE_URL is declared globally
 if (typeof window.API_BASE_URL === 'undefined') {
     window.API_BASE_URL = 'https://dummyjson.com';
 }
 
 const CATEGORY_API = `${API_BASE_URL}/products/categories`;
-const CATEGORY_PRODUCT_API = (category) => `${API_BASE_URL}/products/category/${encodeURIComponent(category)}`;
 
-// CATEGORY IMAGES - Map each category to a relevant image (FIXED URLs)
+// CATEGORY IMAGES
 const CATEGORY_IMAGES = {
     electronics: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
     jewelery: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
@@ -28,171 +27,89 @@ const CATEGORY_IMAGES = {
     default: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'
 };
 
-// Get image URL for a category
+// Global variables
+let categories = [];
+let allProducts = [];
+
+// ===============================
+// UTILITY FUNCTIONS
+// ===============================
 function getCategoryImage(category) {
     if (!category) return CATEGORY_IMAGES.default;
 
-    let categoryName = '';
+    const key = category.toLowerCase().trim();
 
-    if (typeof category === 'object' && category !== null) {
-        categoryName = category.name || category.slug || '';
-    } else if (typeof category === 'string') {
-        categoryName = category;
-    }
-
-    // Handle common variations
-    const key = categoryName.toLowerCase().trim();
-
-    // Map variations to standardized keys
+    // Map variations
     const categoryMap = {
         'jewelry': 'jewelery',
         'mens clothing': "men's clothing",
-        'womens clothing': "women's clothing",
-        'mens-fashion': "men's clothing",
-        'womens-fashion': "women's clothing"
+        'womens clothing': "women's clothing"
     };
 
     const normalizedKey = categoryMap[key] || key;
     return CATEGORY_IMAGES[normalizedKey] || CATEGORY_IMAGES.default;
 }
 
-// Format category name properly
 function formatCategoryName(category) {
     if (!category) return 'Unknown';
 
-    let categoryName = '';
-
-    if (typeof category === 'object' && category !== null) {
-        categoryName = category.name || category.slug || 'Unknown';
-    } else if (typeof category === 'string') {
-        categoryName = category;
-    } else {
-        return 'Unknown';
-    }
-
-    // Convert kebab-case to readable text
-    categoryName = categoryName
+    return category
         .replace(/-/g, ' ')
         .replace(/'s/g, "'s")
         .split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
-
-    return categoryName;
 }
 
-// Generate star rating HTML
-function generateStarRating(rating) {
-    if (typeof rating !== 'number' || rating < 0) rating = 0;
-    if (rating > 5) rating = 5;
-
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-    let stars = '';
-
-    for (let i = 0; i < fullStars; i++) {
-        stars += '<i class="fas fa-star text-warning"></i>';
-    }
-
-    if (hasHalfStar) {
-        stars += '<i class="fas fa-star-half-alt text-warning"></i>';
-    }
-
-    for (let i = 0; i < emptyStars; i++) {
-        stars += '<i class="far fa-star text-muted"></i>';
-    }
-
-    return stars;
+function getQueryParam(param) {
+    return new URLSearchParams(window.location.search).get(param);
 }
 
-// Format price with dollar sign
-function formatPrice(price) {
-    if (typeof price !== 'number') {
-        price = parseFloat(price) || 0;
-    }
-    return `$${price.toFixed(2)}`;
-}
+function showLoading(container, message = 'Loading...') {
+    if (!container) return;
 
-// Create category card with proper image handling
-function createCategoryCard(category) {
-    const categoryName = formatCategoryName(category);
-    const categoryImage = getCategoryImage(category);
-    const categorySlug = typeof category === 'object' ? (category.slug || category.name) : category;
-
-    // Use a simple placeholder if main image fails
-    const placeholderUrl = `https://via.placeholder.com/300x200/6c757d/ffffff?text=${encodeURIComponent(categoryName.substring(0, 15))}`;
-
-    return `
-        <div class="card category-card h-100 shadow-sm border-0 hover-effect">
-            <div class="category-image-wrapper overflow-hidden" style="height: 200px; background-color: #f8f9fa;">
-                <img src="${categoryImage}" 
-                     class="card-img-top w-100 h-100" 
-                     style="object-fit: cover; transition: transform 0.3s ease;"
-                     alt="${categoryName}"
-                     onerror="this.onerror=null; this.src='${placeholderUrl}'; this.style.objectFit='contain'; this.style.padding='20px';">
+    container.innerHTML = `
+        <div class="col-12 text-center py-5">
+            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
             </div>
-            <div class="card-body d-flex flex-column text-center p-3">
-                <h5 class="card-title mb-3 fw-bold">${categoryName}</h5>
-                <a href="categories.html?category=${encodeURIComponent(categorySlug)}" 
-                   class="btn btn-primary mt-auto px-4">
-                    Shop Now <i class="fas fa-arrow-right ms-2"></i>
-                </a>
-            </div>
+            <h4>${message}</h4>
         </div>
     `;
 }
 
-// Create product card for categories page
-function createProductCardForCategory(product) {
-    if (!product || typeof product !== 'object') {
-        console.error('Invalid product:', product);
-        return '<div class="col"><p>Invalid product data</p></div>';
-    }
+function showError(container, message) {
+    if (!container) return;
 
-    const description = product.description ?
-        product.description.substring(0, 60) + (product.description.length > 60 ? '...' : '') :
-        'No description available';
+    container.innerHTML = `
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+            <h4>${message}</h4>
+        </div>
+    `;
+}
 
-    // Use product thumbnail or category image, with proper fallback
-    let imageUrl = product.thumbnail || product.image;
-    if (!imageUrl || imageUrl === 'undefined') {
-        // Use category-specific image
-        imageUrl = getCategoryImage(product.category) || 'https://via.placeholder.com/300x200/6c757d/ffffff?text=Product';
-    }
-
-    const placeholderUrl = `https://via.placeholder.com/300x200/e9ecef/666666?text=${encodeURIComponent((product.title || 'Product').substring(0, 20))}`;
-    const rating = typeof product.rating === 'number' ? product.rating : 0;
-    const stars = generateStarRating(rating);
-    const stock = product.stock || product.quantity || 5;
+// ===============================
+// CATEGORY CARD TEMPLATE
+// ===============================
+function createCategoryCard(category) {
+    const categoryName = formatCategoryName(category);
+    const categoryImage = getCategoryImage(category);
 
     return `
-        <div class="card product-card h-100 shadow-sm border-0 hover-effect">
-            <div class="position-relative" style="height: 200px; overflow: hidden; background-color: #f8f9fa;">
-                <img src="${imageUrl}" 
-                     class="card-img-top w-100 h-100" 
-                     alt="${product.title || 'Product'}"
-                     style="object-fit: cover; transition: transform 0.3s ease;"
-                     loading="lazy"
-                     onerror="this.src='${placeholderUrl}'; this.style.objectFit='contain'; this.style.padding='10px';">
-                <div class="position-absolute top-0 end-0 p-2">
-                    <span class="badge ${stock > 0 ? 'bg-success' : 'bg-danger'} rounded-pill">
-                        ${stock > 0 ? 'In Stock' : 'Out of Stock'}
-                    </span>
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+            <div class="card category-card h-100 shadow-sm border-0 hover-effect">
+                <div class="category-image-wrapper overflow-hidden" style="height: 200px;">
+                    <img src="${categoryImage}" 
+                         class="card-img-top w-100 h-100" 
+                         style="object-fit: cover;"
+                         alt="${categoryName}"
+                         onerror="this.src='https://via.placeholder.com/300x200/6c757d/ffffff?text=${encodeURIComponent(categoryName)}'">
                 </div>
-            </div>
-            <div class="card-body d-flex flex-column p-3">
-                <h6 class="card-title fw-bold mb-2" title="${product.title || 'Product'}">${product.title || 'Untitled Product'}</h6>
-                <p class="card-text text-muted small flex-grow-1 mb-2">${description}</p>
-                <div class="mb-2">
-                    <small class="text-warning">${stars}</small>
-                    <small class="text-muted ms-1">(${rating.toFixed(1)})</small>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-auto">
-                    <span class="text-primary fw-bold fs-5">${formatPrice(product.price || 0)}</span>
-                    <button class="btn btn-sm btn-primary add-to-cart" data-id="${product.id || ''}" data-title="${product.title || ''}" title="Add to cart">
-                        <i class="fas fa-cart-plus"></i> Add
+                <div class="card-body d-flex flex-column text-center p-3">
+                    <h5 class="card-title mb-3 fw-bold">${categoryName}</h5>
+                    <button class="btn btn-primary mt-auto px-4" onclick="filterByCategory('${category}')">
+                        Shop Now <i class="fas fa-arrow-right ms-2"></i>
                     </button>
                 </div>
             </div>
@@ -200,49 +117,251 @@ function createProductCardForCategory(product) {
     `;
 }
 
-// Add CSS for hover effects
-function addCategoryStyles() {
-    if (!document.getElementById('category-styles')) {
-        const style = document.createElement('style');
-        style.id = 'category-styles';
-        style.textContent = `
-            .hover-effect:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-                transition: all 0.3s ease;
-            }
-            .category-card, .product-card {
-                transition: all 0.3s ease;
-            }
-            .category-image-wrapper img:hover {
-                transform: scale(1.05);
-            }
-            .card-title {
-                color: #333;
-                min-height: 3rem;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(20px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-}
+// ===============================
+// MAIN FILTER FUNCTION - FIXED
+// ===============================
+function filterByCategory(category) {
+    console.log('Filtering by category:', category);
 
-// Load featured categories for home page
-async function loadFeaturedCategories() {
-    const container = document.getElementById('categoryList');
-    if (!container) {
-        console.log('Category list container not found');
+    if (!category || category === 'all') {
+        // Show all products
+        if (typeof window.renderProducts === 'function' && allProducts.length > 0) {
+            window.renderProducts(allProducts);
+            updateCategoryTitle('All Categories');
+        } else {
+            // Fallback: load all products
+            window.location.href = 'products.html';
+        }
         return;
     }
 
-    // Add styles for category cards
-    addCategoryStyles();
+    // Filter products by category
+    if (allProducts.length === 0) {
+        console.warn('No products loaded yet');
+        // Load products first
+        loadCategoryProductsFromAPI(category);
+        return;
+    }
+
+    const filteredProducts = allProducts.filter(product =>
+        product.category && product.category.toLowerCase() === category.toLowerCase()
+    );
+
+    console.log(`Found ${filteredProducts.length} products in category ${category}`);
+
+    // Update UI
+    updateCategoryTitle(formatCategoryName(category));
+    showCategoryProducts(filteredProducts);
+}
+
+function updateCategoryTitle(title) {
+    const titleElement = document.getElementById('categoryTitle');
+    if (titleElement) {
+        titleElement.innerHTML = `
+            <div class="d-flex align-items-center">
+                <button onclick="showAllCategories()" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <h2 class="mb-0">${title}</h2>
+            </div>
+        `;
+    }
+}
+
+// ===============================
+// PRODUCT DISPLAY FUNCTIONS
+// ===============================
+function showCategoryProducts(products) {
+    const container = document.getElementById('categoryProducts');
+    const categoryList = document.getElementById('categoryList');
+
+    if (container && categoryList) {
+        // Hide category list, show products
+        categoryList.style.display = 'none';
+        container.style.display = 'block';
+        container.innerHTML = '';
+
+        if (products.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h4>No products found</h4>
+                    <p class="text-muted">No products available in this category</p>
+                    <button onclick="showAllCategories()" class="btn btn-primary mt-3">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Categories
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        // Show results count
+        const resultsHtml = `
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="alert alert-info d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-info-circle me-2"></i>
+                            Showing ${products.length} product${products.length !== 1 ? 's' : ''}
+                        </div>
+                        <button onclick="showAllCategories()" class="btn btn-sm btn-outline-info">
+                            <i class="fas fa-arrow-left me-1"></i>All Categories
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = resultsHtml;
+
+        // Create products grid
+        const row = document.createElement('div');
+        row.className = 'row';
+
+        products.forEach((product, index) => {
+            const productCard = createProductCard(product, index);
+            row.innerHTML += productCard;
+        });
+
+        container.appendChild(row);
+
+        // Attach event listeners
+        attachProductEventListeners(products);
+    }
+}
+
+function showAllCategories() {
+    const container = document.getElementById('categoryProducts');
+    const categoryList = document.getElementById('categoryList');
+
+    if (container && categoryList) {
+        // Show category list, hide products
+        container.style.display = 'none';
+        categoryList.style.display = 'block';
+
+        // Reset title
+        const titleElement = document.getElementById('categoryTitle');
+        if (titleElement) {
+            titleElement.innerHTML = '<h2 class="mb-0">Shop by Category</h2>';
+        }
+
+        // Clear URL parameter
+        if (window.history && window.history.replaceState) {
+            const url = new URL(window.location);
+            url.searchParams.delete('category');
+            window.history.replaceState({}, '', url);
+        }
+    }
+}
+
+// ===============================
+// PRODUCT CARD TEMPLATE
+// ===============================
+function createProductCard(product, index = 0) {
+    if (!product) return '';
+
+    const description = product.description ?
+        product.description.substring(0, 80) + (product.description.length > 80 ? '...' : '') :
+        'No description available';
+
+    const image = product.thumbnail || product.image || 'https://via.placeholder.com/300';
+    const rating = product.rating || 0;
+    const stock = product.stock || 5;
+    const isInStock = stock > 0;
+
+    // Generate star rating
+    let stars = '';
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+
+    for (let i = 0; i < fullStars; i++) stars += '<i class="fas fa-star text-warning small"></i>';
+    if (hasHalfStar) stars += '<i class="fas fa-star-half-alt text-warning small"></i>';
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    for (let i = 0; i < emptyStars; i++) stars += '<i class="far fa-star text-muted small"></i>';
+
+    return `
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-4" style="animation: fadeIn 0.5s ease-out ${index * 0.05}s both;">
+            <div class="card product-card h-100 shadow-sm border-0">
+                <div class="position-relative">
+                    <img src="${image}" 
+                         class="card-img-top" 
+                         alt="${product.title}"
+                         style="height: 200px; object-fit: cover;"
+                         onerror="this.src='https://via.placeholder.com/300'">
+                    <div class="position-absolute top-0 end-0 m-2">
+                        <span class="badge ${isInStock ? 'bg-success' : 'bg-danger'}">
+                            ${isInStock ? 'In Stock' : 'Out of Stock'}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <h6 class="card-title fw-bold mb-2">${product.title}</h6>
+                    <p class="card-text text-muted small mb-2 flex-grow-1">${description}</p>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="text-warning">${stars}</div>
+                        <small class="text-muted ms-1">(${rating.toFixed(1)})</small>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-auto">
+                        <span class="text-primary fw-bold fs-5">
+                            ${typeof window.formatPrice === 'function' ? window.formatPrice(product.price) : `₹${product.price}`}
+                        </span>
+                        <button class="btn btn-sm btn-primary add-to-cart-btn" 
+                                data-id="${product.id}"
+                                ${!isInStock ? 'disabled' : ''}>
+                            <i class="fas fa-cart-plus"></i> Add
+                        </button>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top-0">
+                    <a href="product-details.html?id=${product.id}" 
+                       class="btn btn-outline-primary btn-sm w-100">
+                        <i class="fas fa-eye me-1"></i> View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function attachProductEventListeners(products) {
+    document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+        button.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const productId = parseInt(this.dataset.id);
+            const product = products.find(p => p.id === productId);
+
+            if (product) {
+                // Use addToCart from products.js or main.js
+                if (typeof window.addToCart === 'function') {
+                    window.addToCart(product);
+                } else {
+                    // Fallback
+                    console.log('Adding product to cart:', product);
+                    alert(`${product.title} added to cart!`);
+                }
+
+                // Visual feedback
+                const originalHtml = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-check"></i>';
+                this.disabled = true;
+
+                setTimeout(() => {
+                    this.innerHTML = originalHtml;
+                    this.disabled = false;
+                }, 2000);
+            }
+        });
+    });
+}
+
+// ===============================
+// LOAD CATEGORIES
+// ===============================
+async function loadAllCategories() {
+    const container = document.getElementById('categoryList');
+    if (!container) return;
 
     showLoading(container, 'Loading categories...');
 
@@ -254,132 +373,24 @@ async function loadFeaturedCategories() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const categories = await response.json();
-        console.log('Categories response:', categories);
+        let categoryList = await response.json();
 
-        // Check if categories is an array
-        if (!Array.isArray(categories)) {
-            console.error('Categories is not an array:', categories);
-
-            // Try to handle different response formats
-            if (categories && typeof categories === 'object') {
-                // Maybe it's an object with categories property
-                if (Array.isArray(categories.categories)) {
-                    categories = categories.categories;
+        // Ensure it's an array
+        if (!Array.isArray(categoryList)) {
+            if (categoryList && typeof categoryList === 'object') {
+                if (Array.isArray(categoryList.categories)) {
+                    categoryList = categoryList.categories;
                 } else {
-                    // Try to convert object keys to array
-                    categories = Object.values(categories);
+                    categoryList = Object.values(categoryList);
                 }
             }
 
-            // If still not an array, use fallback categories
-            if (!Array.isArray(categories)) {
-                console.log('Using fallback categories');
-                categories = ["electronics", "jewelery", "men's clothing", "women's clothing", "fragrances", "groceries", "furniture", "beauty"];
+            if (!Array.isArray(categoryList)) {
+                categoryList = FALLBACK_CATEGORIES;
             }
         }
 
-        container.innerHTML = '';
-
-        // Display top 8 categories
-        const featuredCategories = categories.slice(0, 8);
-
-        if (featuredCategories.length === 0) {
-            container.innerHTML = `
-                <div class="col-12 text-center py-5">
-                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
-                    <h4>No categories found</h4>
-                    <p class="text-muted">Categories will appear here soon</p>
-                </div>
-            `;
-            return;
-        }
-
-        console.log('Displaying featured categories:', featuredCategories);
-
-        featuredCategories.forEach((category, index) => {
-            const col = document.createElement('div');
-            col.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
-            col.style.animation = `fadeIn 0.5s ease-out ${index * 0.1}s both`;
-            col.innerHTML = createCategoryCard(category);
-            container.appendChild(col);
-        });
-
-        console.log(`Loaded ${featuredCategories.length} categories`);
-    } catch (error) {
-        console.error('Error loading categories:', error);
-
-        // Use fallback categories on error
-        const fallbackCategories = [
-            "electronics", "jewelery", "men's clothing", "women's clothing",
-            "fragrances", "groceries", "furniture", "beauty"
-        ];
-
-        container.innerHTML = '';
-
-        fallbackCategories.forEach((category, index) => {
-            const col = document.createElement('div');
-            col.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
-            col.style.animation = `fadeIn 0.5s ease-out ${index * 0.1}s both`;
-            col.innerHTML = createCategoryCard(category);
-            container.appendChild(col);
-        });
-
-        console.log(`Loaded ${fallbackCategories.length} fallback categories`);
-    }
-}
-
-// Load all categories for categories page
-async function loadAllCategoryCards() {
-    const container = document.getElementById('categoryList');
-    if (!container) {
-        console.log('Category list container not found');
-        return;
-    }
-
-    // Add styles for category cards
-    addCategoryStyles();
-
-    showLoading(container, 'Loading categories...');
-
-    try {
-        console.log('Fetching all categories from:', CATEGORY_API);
-        const response = await fetch(CATEGORY_API);
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        let categories = await response.json();
-        console.log('All categories response:', categories);
-
-        // Check if categories is an array
-        if (!Array.isArray(categories)) {
-            console.warn('Categories is not an array, attempting to fix...');
-
-            if (categories && typeof categories === 'object') {
-                // Check for nested array
-                if (Array.isArray(categories.categories)) {
-                    categories = categories.categories;
-                } else if (Array.isArray(categories.data)) {
-                    categories = categories.data;
-                } else {
-                    // Convert object to array of category names
-                    categories = Object.keys(categories).map(key => {
-                        const value = categories[key];
-                        return typeof value === 'string' ? value : key;
-                    });
-                }
-            }
-
-            // Fallback if still not an array
-            if (!Array.isArray(categories)) {
-                categories = ["electronics", "jewelery", "men's clothing", "women's clothing",
-                    "fragrances", "groceries", "furniture", "beauty", "sports",
-                    "automotive", "lighting", "skincare"];
-            }
-        }
-
+        categories = categoryList;
         container.innerHTML = '';
 
         if (categories.length === 0) {
@@ -387,310 +398,157 @@ async function loadAllCategoryCards() {
                 <div class="col-12 text-center py-5">
                     <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
                     <h4>No categories available</h4>
-                    <p class="text-muted">Check back later for new categories</p>
                 </div>
             `;
             return;
         }
 
-        console.log('Displaying all categories:', categories);
-
+        // Render categories
         categories.forEach((category, index) => {
-            const col = document.createElement('div');
-            col.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
-            col.style.animation = `fadeIn 0.5s ease-out ${index * 0.05}s both`;
-            col.innerHTML = createCategoryCard(category);
-            container.appendChild(col);
+            container.innerHTML += createCategoryCard(category);
         });
 
         console.log(`Loaded ${categories.length} categories`);
+
     } catch (error) {
         console.error('Error loading categories:', error);
-        container.innerHTML = `
-            <div class="col-12 text-center py-5">
-                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
-                <h4>Failed to load categories</h4>
-                <p class="text-muted">Please try again later</p>
-                <button onclick="loadAllCategoryCards()" class="btn btn-primary mt-3">
-                    <i class="fas fa-redo me-2"></i>Retry
-                </button>
-            </div>
-        `;
-    }
-}
 
-// Load products for a specific category
-async function loadCategoryProducts(category) {
-    console.log('Loading products for category:', category);
+        // Use fallback categories
+        categories = FALLBACK_CATEGORIES;
+        container.innerHTML = '';
 
-    const categoryName = formatCategoryName(category);
-    const titleElement = document.getElementById('categoryTitle');
-    if (titleElement) {
-        titleElement.textContent = categoryName;
-        // Add a back button
-        titleElement.innerHTML = `
-            <div class="d-flex align-items-center">
-                <button onclick="window.history.back()" class="btn btn-outline-secondary me-3">
-                    <i class="fas fa-arrow-left"></i>
-                </button>
-                <span>${categoryName}</span>
-            </div>
-        `;
-    }
-
-    const container = document.getElementById('categoryProducts');
-    if (!container) {
-        console.log('categoryProducts container not found');
-        return;
-    }
-
-    // Hide the category list
-    const categoryList = document.getElementById('categoryList');
-    if (categoryList) {
-        categoryList.style.display = 'none';
-    }
-
-    showLoading(container, `Loading ${categoryName} products...`);
-
-    try {
-        console.log('Fetching category products from:', CATEGORY_PRODUCT_API(category));
-        const response = await fetch(CATEGORY_PRODUCT_API(category));
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        const products = data.products || [];
-
-        displayCategoryProductsGrid(products);
-    } catch (error) {
-        console.error('Error loading category products:', error);
-        container.innerHTML = `
-            <div class="col-12 text-center py-5">
-                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
-                <h4>Failed to load products</h4>
-                <p class="text-muted">Please try again later</p>
-                <a href="categories.html" class="btn btn-primary mt-3">
-                    <i class="fas fa-arrow-left me-2"></i>Back to Categories
-                </a>
-            </div>
-        `;
-    }
-}
-
-// Display products in grid
-function displayCategoryProductsGrid(products) {
-    const container = document.getElementById('categoryProducts');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    if (!Array.isArray(products) || products.length === 0) {
-        container.innerHTML = `
-            <div class="col-12 text-center py-5">
-                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                <h4>No products found</h4>
-                <p class="text-muted">This category currently has no products</p>
-                <a href="categories.html" class="btn btn-primary mt-3">
-                    <i class="fas fa-arrow-left me-2"></i>Browse Categories
-                </a>
-            </div>
-        `;
-        return;
-    }
-
-    const row = document.createElement('div');
-    row.className = 'row';
-
-    products.forEach((product, index) => {
-        if (!product || typeof product !== 'object') {
-            console.warn('Skipping invalid product at index', index, product);
-            return;
-        }
-
-        const col = document.createElement('div');
-        col.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
-        col.style.animation = `fadeIn 0.5s ease-out ${index * 0.05}s both`;
-        col.innerHTML = createProductCardForCategory(product);
-        row.appendChild(col);
-    });
-
-    container.appendChild(row);
-
-    // Update the results count
-    const resultsCount = document.createElement('div');
-    resultsCount.className = 'row mb-4';
-    resultsCount.innerHTML = `
-        <div class="col-12">
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                Found ${products.length} product${products.length !== 1 ? 's' : ''} in this category
-            </div>
-        </div>
-    `;
-    container.insertBefore(resultsCount, row);
-
-    // Attach event listeners to add-to-cart buttons with proper product reference
-    row.querySelectorAll('.add-to-cart').forEach(button => {
-        button.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const productId = parseInt(this.dataset.id);
-            const product = products.find(p => p.id === productId);
-
-            if (product) {
-                console.log('[v0] Adding product from category:', product);
-
-                // Add to cart - assuming this function exists globally
-                if (typeof window.addToCart === 'function') {
-                    window.addToCart(product);
-                } else {
-                    console.warn('addToCart function not found. Using fallback.');
-                    // Fallback: store in localStorage
-                    const cart = JSON.parse(localStorage.getItem('cart')) || [];
-                    const existingItem = cart.find(item => item.id === product.id);
-
-                    if (existingItem) {
-                        existingItem.quantity = (existingItem.quantity || 1) + 1;
-                    } else {
-                        cart.push({
-                            ...product,
-                            quantity: 1
-                        });
-                    }
-
-                    localStorage.setItem('cart', JSON.stringify(cart));
-                }
-
-                // Wait a brief moment for addToCart to save, then update cart count
-                setTimeout(() => {
-                    const cart = JSON.parse(localStorage.getItem('cart')) || [];
-                    const cartCountElement = document.getElementById('cartCount');
-                    if (cartCountElement) {
-                        const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-                        cartCountElement.textContent = totalItems;
-                        console.log('[v0] Cart count updated to:', totalItems);
-                    }
-                }, 50);
-
-                // Add visual feedback
-                const originalHtml = this.innerHTML;
-                const originalClass = this.className;
-                this.innerHTML = '<i class="fas fa-check me-1"></i>Added!';
-                this.className = 'btn btn-sm btn-success add-to-cart';
-                this.disabled = true;
-
-                setTimeout(() => {
-                    this.innerHTML = originalHtml;
-                    this.className = originalClass;
-                    this.disabled = false;
-                }, 2000);
-            }
+        categories.forEach((category, index) => {
+            container.innerHTML += createCategoryCard(category);
         });
-    });
-}
 
-// Helper function for loading state
-function showLoading(container, message = 'Loading...') {
-    container.innerHTML = `
-        <div class="col-12 text-center py-5">
-            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <h4>${message}</h4>
-        </div>
-    `;
-}
-
-// Initialize categories page
-async function initCategoriesPage() {
-    const category = getQueryParam('category');
-
-    if (category) {
-        await loadCategoryProducts(category);
-    } else {
-        await loadAllCategoryCards();
+        console.log(`Loaded ${categories.length} fallback categories`);
     }
 }
 
-// Initialize page based on URL
-function initializeCategories() {
-    const path = window.location.pathname;
-
-    if (path.includes('index.html') || path === '/' || path === '' || path.endsWith('/')) {
-        console.log('Initializing home page categories');
-        loadFeaturedCategories();
-    } else if (path.includes('categories.html')) {
-        console.log('Initializing categories page');
-        initCategoriesPage();
-    }
-}
-
-// Helper function to get URL query parameters
-function getQueryParam(param) {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(param);
-}
-
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', function () {
-    console.log('DOM loaded - initializing categories module');
-
-    // Wait a bit to ensure other scripts are loaded
-    setTimeout(() => {
-        if (typeof API_BASE_URL !== 'undefined') {
-            initializeCategories();
-        } else {
-            console.warn('API_BASE_URL not found, retrying...');
-            // Check again after 500ms
-            setTimeout(() => {
-                if (typeof API_BASE_URL !== 'undefined') {
-                    initializeCategories();
-                } else {
-                    console.error('API_BASE_URL is still not defined');
-                    // Show error message
-                    const container = document.getElementById('categoryList') || document.getElementById('categoryProducts');
-                    if (container) {
-                        container.innerHTML = `
-                            <div class="col-12 text-center py-5">
-                                <i class="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
-                                <h4>Configuration Error</h4>
-                                <p class="text-muted">Please refresh the page or contact support</p>
-                                <button onclick="window.location.reload()" class="btn btn-primary mt-3">
-                                    <i class="fas fa-redo me-2"></i>Refresh Page
-                                </button>
-                            </div>
-                        `;
-                    }
-                }
-            }, 500);
-        }
-    }, 100);
-});
-
-// Make functions globally available
-window.loadFeaturedCategories = loadFeaturedCategories;
-window.loadAllCategoryCards = loadAllCategoryCards;
-window.loadCategoryProducts = loadCategoryProducts;
-window.formatCategoryName = formatCategoryName;
-
-// Fallback categories in case API fails
+// Fallback categories
 const FALLBACK_CATEGORIES = [
     "electronics", "jewelery", "men's clothing", "women's clothing",
     "fragrances", "groceries", "furniture", "beauty", "sports",
     "automotive", "lighting", "skincare"
 ];
 
-// Export functions for use in other modules (if using modules)
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        loadFeaturedCategories,
-        loadAllCategoryCards,
-        loadCategoryProducts,
-        getCategoryImage,
-        formatCategoryName,
-        generateStarRating,
-        formatPrice,
-        FALLBACK_CATEGORIES
-    };
+// ===============================
+// LOAD CATEGORY PRODUCTS FROM API (Fallback)
+// ===============================
+async function loadCategoryProductsFromAPI(category) {
+    const container = document.getElementById('categoryProducts');
+    if (!container) return;
+
+    showLoading(container, `Loading ${formatCategoryName(category)} products...`);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/products/category/${encodeURIComponent(category)}`);
+        if (!response.ok) throw new Error('Failed to load products');
+
+        const data = await response.json();
+        const products = data.products || [];
+
+        showCategoryProducts(products);
+
+    } catch (error) {
+        console.error('Error loading category products:', error);
+        showError(container, 'Failed to load products for this category');
+    }
 }
+
+// ===============================
+// INITIALIZATION
+// ===============================
+function initializeCategoriesPage() {
+    console.log('Initializing categories page');
+
+    // Load all products from products.js if available
+    if (typeof window.allProducts !== 'undefined' && Array.isArray(window.allProducts)) {
+        allProducts = window.allProducts;
+        console.log(`Loaded ${allProducts.length} products from products.js`);
+    }
+
+    // Check for category parameter in URL
+    const category = getQueryParam('category');
+
+    if (category) {
+        // Filter by category from URL
+        filterByCategory(category);
+    } else {
+        // Show all categories
+        loadAllCategories();
+    }
+}
+
+function initializeHomePageCategories() {
+    console.log('Initializing home page categories');
+    loadAllCategories();
+}
+
+// ===============================
+// PAGE INITIALIZATION
+// ===============================
+function initializePage() {
+    const path = window.location.pathname;
+    const page = path.split('/').pop() || 'index.html';
+
+    console.log('Categories.js: Initializing page:', page);
+
+    if (page === 'index.html' || path === '/' || path === '' || path.endsWith('/')) {
+        initializeHomePageCategories();
+    } else if (page === 'categories.html') {
+        initializeCategoriesPage();
+    }
+}
+
+// ===============================
+// EXPORT FUNCTIONS
+// ===============================
+window.filterByCategory = filterByCategory;
+window.showAllCategories = showAllCategories;
+window.loadAllCategories = loadAllCategories;
+window.formatCategoryName = formatCategoryName;
+
+// ===============================
+// CSS STYLES
+// ===============================
+if (!document.getElementById('category-styles')) {
+    const style = document.createElement('style');
+    style.id = 'category-styles';
+    style.textContent = `
+        .category-card, .product-card {
+            transition: all 0.3s ease;
+        }
+        
+        .category-card:hover, .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        }
+        
+        .category-image-wrapper img:hover {
+            transform: scale(1.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .category-image-wrapper {
+            overflow: hidden;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .add-to-cart-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// ===============================
+// DOM READY
+// ===============================
+document.addEventListener('DOMContentLoaded', initializePage);
