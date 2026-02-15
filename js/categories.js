@@ -584,14 +584,6 @@ function initializePage() {
 
     console.log('Categories.js: Initializing page:', page);
 
-    // Update auth button and cart count
-    if (typeof window.updateCartCount === 'function') {
-        window.updateCartCount();
-    }
-    if (typeof window.updateAuthButton === 'function') {
-        window.updateAuthButton();
-    }
-
     if (page === 'index.html' || path === '/' || path === '' || path.endsWith('/')) {
         initializeHomePageCategories();
     } else if (page === 'categories.html') {

@@ -1,3 +1,18 @@
+// ================= NAVBAR INITIALIZATION =================
+
+function initializeNavbar() {
+    // Update active link based on current page
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+        const href = link.getAttribute('href');
+        if (href === currentPage || (currentPage === '' && href === 'index.html')) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
+}
+
 // ================= COMMON FUNCTIONS =================
 
 // Currency Formatter (Rupees)
@@ -11,6 +26,9 @@ function formatPrice(price) {
 window.formatPrice = formatPrice;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize navbar
+    initializeNavbar();
+
     updateCartCount();
 
     // Listen for cart changes using storage events (cross-tab)

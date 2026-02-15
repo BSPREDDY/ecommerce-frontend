@@ -125,7 +125,7 @@ function addToCart(product, quantity = 1) {
 
 function formatPrice(price) {
     const numPrice = typeof price === 'number' ? price : parseFloat(price) || 0;
-    return `₹${numPrice.toFixed(0)}`;
+    return `₹${numPrice.toFixed(2)}`;
 }
 
 function getQueryParam(param) {
@@ -213,7 +213,7 @@ window.logout = function () {
 // ===============================
 // PRODUCT CARD TEMPLATE
 // ===============================
-function createProductCard(product) {
+function createProductCard(product, isRelated = false) {
     const description = product.description ?
         product.description.substring(0, 60) + (product.description.length > 60 ? '...' : '') :
         'No description available';
@@ -222,14 +222,56 @@ function createProductCard(product) {
     const rating = product.rating || 0;
     const stock = product.stock || 5;
 
+    // For related products in product-details page
+    if (isRelated) {
+        return `
+            <div class="product-card">
+                <div class="position-relative">
+                    <img src="${image}" 
+                         alt="${product.title}"
+                         onerror="this.src='https://via.placeholder.com/300'">
+                    ${stock <= 10 && stock > 0 ?
+                `<span class="badge bg-warning position-absolute top-0 end-0 m-2">Low Stock</span>` :
+                ''}
+                    ${stock === 0 ?
+                `<span class="badge bg-danger position-absolute top-0 end-0 m-2">Out of Stock</span>` :
+                ''}
+                    ${product.discountPercentage ? `
+                        <span class="badge bg-danger position-absolute top-0 start-0 m-2">
+                            -${Math.round(product.discountPercentage)}%
+                        </span>
+                    ` : ''}
+                </div>
+                <div class="product-card-body">
+                    <h5 title="${product.title}">${product.title}</h5>
+                    <div class="product-card-rating">
+                        <div class="text-warning small d-inline-block">
+                            ${generateStarRating(rating)}
+                        </div>
+                        <small class="text-muted ms-1">(${rating.toFixed(1)})</small>
+                    </div>
+                    <div class="product-card-price">${formatPrice(product.price)}</div>
+                    <button class="btn btn-sm btn-primary add-to-cart-btn" 
+                            data-id="${product.id}"
+                            data-title="${product.title}"
+                            data-price="${product.price}"
+                            data-image="${image}"
+                            ${stock === 0 ? 'disabled' : ''}>
+                        <i class="fas fa-cart-plus me-1"></i> Add to Cart
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // For regular products grid
     return `
         <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
             <div class="card product-card h-100 border-0 shadow-sm">
-                <div class="position-relative">
+                <div class="position-relative product-image-container">
                     <img src="${image}" 
                          class="card-img-top product-img" 
                          alt="${product.title}"
-                         style="height: 100px; object-fit: cover;"
                          onerror="this.src='https://via.placeholder.com/300'">
                     ${stock <= 10 && stock > 0 ?
             `<span class="badge bg-warning position-absolute top-0 end-0 m-2">Low Stock</span>` :
@@ -827,9 +869,9 @@ async function loadRelatedProducts(category) {
         }
 
         container.innerHTML = `
-            <h2 class="section-title mb-4">Related Products</h2>
+            <h2>Related Products</h2>
             <div class="related-products-grid">
-                ${relatedProducts.map(product => createProductCard(product)).join('')}
+                ${relatedProducts.map(product => createProductCard(product, true)).join('')}
             </div>
         `;
 
@@ -850,14 +892,6 @@ function initializePage() {
     const page = path.split('/').pop() || 'index.html';
 
     console.log('[v0] Products.js: Initializing page:', page);
-
-    // Update cart count and auth button on all pages
-    if (typeof window.updateCartCount === 'function') {
-        window.updateCartCount();
-    }
-
-    // Call updateAuthButton
-    updateAuthButton();
 
     // Initialize based on page
     if (page === 'index.html' || path === '/' || path === '' || path.endsWith('/')) {
@@ -880,7 +914,6 @@ window.filterProducts = filterProducts;
 window.addToCart = addToCart;
 window.formatPrice = formatPrice;
 window.renderProducts = renderProducts;
-window.updateAuthButton = updateAuthButton;
 window.allProducts = allProducts;
 
 // ===============================
