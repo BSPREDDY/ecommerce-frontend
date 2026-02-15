@@ -15,26 +15,32 @@
 
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
-            <a class="navbar-brand" href="index.html">ShopEasy</a>
+            <a class="navbar-brand" href="index.html">
+                <i class="fas fa-shopping-bag me-2"></i>ShopEasy
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="products.html">Products</a></li>
                     <li class="nav-item"><a class="nav-link" href="categories.html">Categories</a></li>
                     <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
                     <li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
                 </ul>
-                <div class="d-flex">
-                    <a href="search.html" class="btn btn-outline-light me-2"><i class="fas fa-search"></i></a>
-                    <a href="auth.html" class="btn btn-outline-light me-2" id="authBtn">Login</a>
-                    <a href="cart.html" class="btn btn-outline-light">
+                <div class="d-flex gap-2 ms-3">
+                    <a href="search.html" class="btn btn-primary btn-sm" title="Search"><i
+                            class="fas fa-search"></i></a>
+                    <a href="auth.html" class="btn btn-primary btn-sm" id="authBtn">
+                        <i class="fas fa-user me-1"></i>Login
+                    </a>
+                    <a href="cart.html" class="btn btn-primary btn-sm position-relative">
                         <i class="fas fa-shopping-cart"></i>
-                        <span class="badge bg-danger" id="cartCount">0</span>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                            id="cartCount" style="display: none;">0</span>
                     </a>
                 </div>
             </div>
@@ -43,38 +49,54 @@
 
     <!-- Hero Slider -->
     <section class="hero-slider">
-        <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
+        <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
+            <div class="carousel-indicators">
+                <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"
+                    aria-current="true"></button>
+                <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+            </div>
             <div class="carousel-inner">
                 <div class="carousel-item active">
                     <img src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
-                        class="d-block w-100" alt="Sale">
-                    <div class="carousel-caption d-none d-md-block">
-                        <h2>Summer Sale Up to 50% Off</h2>
-                        <p>Don't miss out on amazing deals</p>
+                        class="d-block w-100" alt="Summer Sale">
+                    <div class="carousel-caption d-flex align-items-center justify-content-center">
+                        <div class="text-center">
+                            <h1 class="display-4 fw-bold mb-3">Biggest Sale of the Year</h1>
+                            <p class="lead mb-4">Get up to 50% off on all products</p>
+                            <a href="products.html" class="btn btn-light btn-lg px-5">Shop Now</a>
+                        </div>
                     </div>
                 </div>
                 <div class="carousel-item">
                     <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
                         class="d-block w-100" alt="New Arrivals">
-                    <div class="carousel-caption d-none d-md-block">
-                        <h2>New Arrivals</h2>
-                        <p>Check out our latest collection</p>
+                    <div class="carousel-caption d-flex align-items-center justify-content-center">
+                        <div class="text-center">
+                            <h1 class="display-4 fw-bold mb-3">Explore New Arrivals</h1>
+                            <p class="lead mb-4">Discover our latest exclusive collection</p>
+                            <a href="products.html" class="btn btn-light btn-lg px-5">Browse Collection</a>
+                        </div>
                     </div>
                 </div>
             </div>
             <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
                 <span class="carousel-control-prev-icon"></span>
+                <span class="visually-hidden">Previous</span>
             </button>
             <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
                 <span class="carousel-control-next-icon"></span>
+                <span class="visually-hidden">Next</span>
             </button>
         </div>
     </section>
 
     <!-- Shop by Category -->
-    <section class="categories py-5">
+    <section class="categories py-5 bg-white">
         <div class="container">
-            <h2 class="text-center mb-4">Shop by Category</h2>
+            <div class="text-center mb-5">
+                <h2 class="section-title">Shop by Category</h2>
+                <p class="text-muted lead">Browse products by category</p>
+            </div>
             <div class="row" id="categoryList">
                 <!-- Categories will be loaded here -->
             </div>
@@ -161,16 +183,16 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK (Optional) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <!-- Custom JS -->
+    <!-- Custom JS (Load order matters) -->
     <script src="js/firebase-config.js"></script>
-    <script src="js/main.js"></script>
-    <script src="js/auth.js"></script>
     <script src="js/cart.js"></script>
     <script src="js/products.js"></script>
     <script src="js/categories.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
 </body>
 
 </html>

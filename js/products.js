@@ -1,4 +1,4 @@
-// products.js - UPDATED & FIXED
+// products.js - COMPLETE FIXED VERSION
 // ===============================
 // Products Management Module
 // ===============================
@@ -13,7 +13,10 @@ const API_BASE_URL = window.API_BASE_URL;
 let allProducts = [];
 let filteredProducts = [];
 
-// Helper functions
+// ===============================
+// HELPER FUNCTIONS
+// ===============================
+
 function showLoading(container) {
     if (!container) return;
     container.innerHTML = `
@@ -73,35 +76,43 @@ function addToCart(product, quantity = 1) {
 
     // Use cart.js function if available
     if (typeof window.cartAddToCart === 'function') {
-        // Create a product object with required properties
-        const cartProduct = {
-            id: product.id,
-            title: product.title || product.name || 'Unknown Product',
-            price: product.price || 0,
-            image: product.image || product.thumbnail || 'https://via.placeholder.com/80',
-            qty: quantity
-        };
-        window.cartAddToCart(cartProduct);
-        return true;
+        const result = window.cartAddToCart(product, quantity);
+        if (result) {
+            showNotification(`<strong>${product.title}</strong> added to cart!`, 'success');
+        }
+        return result;
     }
 
-    // Fallback to localStorage
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    // Fallback implementation
+    console.warn('[Products] Using fallback addToCart (cart.js not loaded)');
+    let cart = [];
+    try {
+        const cartData = localStorage.getItem('cart');
+        cart = cartData ? JSON.parse(cartData) : [];
+        if (!Array.isArray(cart)) cart = [];
+    } catch (e) {
+        cart = [];
+    }
+
     const existingIndex = cart.findIndex(item => item.id === product.id);
 
     if (existingIndex > -1) {
-        cart[existingIndex].qty = (cart[existingIndex].qty || 1) + quantity;
+        cart[existingIndex].quantity = (cart[existingIndex].quantity || 1) + quantity;
     } else {
         cart.push({
             id: product.id,
-            title: product.title || product.name || 'Unknown Product',
+            title: product.title || 'Unknown Product',
             price: product.price || 0,
             image: product.image || product.thumbnail || 'https://via.placeholder.com/80',
-            qty: quantity
+            quantity: quantity,
+            category: product.category || 'General'
         });
     }
 
     localStorage.setItem('cart', JSON.stringify(cart));
+
+    // Dispatch custom event for cart updates
+    window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart: cart } }));
 
     // Update cart count
     if (typeof window.updateCartCount === 'function') {
@@ -152,6 +163,54 @@ function updateCartCount() {
 }
 
 // ===============================
+// FIXED: AUTH BUTTON FUNCTION
+// ===============================
+function updateAuthButton() {
+    const authBtn = document.getElementById('authButton');
+    if (!authBtn) return;
+
+    try {
+        const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
+
+        if (user && user.username) {
+            // User is logged in
+            authBtn.innerHTML = `
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-1"></i>${user.username}
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
+                        <li><a class="dropdown-item" href="orders.html"><i class="fas fa-box me-2"></i>Orders</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="window.logout()"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            `;
+        } else {
+            // User is not logged in
+            authBtn.innerHTML = '<a href="login.html" class="btn btn-outline-primary"><i class="fas fa-sign-in-alt me-1"></i>Login</a>';
+        }
+    } catch (e) {
+        console.error('Error updating auth button:', e);
+        authBtn.innerHTML = '<a href="login.html" class="btn btn-outline-primary"><i class="fas fa-sign-in-alt me-1"></i>Login</a>';
+    }
+}
+
+// ===============================
+// FIXED: LOGOUT FUNCTION
+// ===============================
+window.logout = function () {
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('user');
+    showNotification('Logged out successfully', 'success');
+    updateAuthButton();
+    setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 1500);
+};
+
+// ===============================
 // PRODUCT CARD TEMPLATE
 // ===============================
 function createProductCard(product) {
@@ -170,7 +229,7 @@ function createProductCard(product) {
                     <img src="${image}" 
                          class="card-img-top product-img" 
                          alt="${product.title}"
-                         style="height: 200px; object-fit: cover;"
+                         style="height: 100px; object-fit: cover;"
                          onerror="this.src='https://via.placeholder.com/300'">
                     ${stock <= 10 && stock > 0 ?
             `<span class="badge bg-warning position-absolute top-0 end-0 m-2">Low Stock</span>` :
@@ -178,6 +237,11 @@ function createProductCard(product) {
                     ${stock === 0 ?
             `<span class="badge bg-danger position-absolute top-0 end-0 m-2">Out of Stock</span>` :
             ''}
+                    ${product.discountPercentage ? `
+                        <span class="badge bg-danger position-absolute top-0 start-0 m-2">
+                            -${Math.round(product.discountPercentage)}%
+                        </span>
+                    ` : ''}
                 </div>
                 <div class="card-body d-flex flex-column">
                     <h6 class="card-title fw-bold mb-2" title="${product.title}">${product.title}</h6>
@@ -192,6 +256,9 @@ function createProductCard(product) {
                         <span class="text-primary fw-bold fs-5">${formatPrice(product.price)}</span>
                         <button class="btn btn-sm btn-primary add-to-cart-btn" 
                                 data-id="${product.id}"
+                                data-title="${product.title}"
+                                data-price="${product.price}"
+                                data-image="${image}"
                                 ${stock === 0 ? 'disabled' : ''}>
                             <i class="fas fa-cart-plus"></i> Add
                         </button>
@@ -273,36 +340,54 @@ function renderProducts(products) {
 // ===============================
 function attachCartEventListeners(products) {
     document.querySelectorAll('.add-to-cart-btn').forEach(button => {
-        button.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const productId = parseInt(this.dataset.id);
-            const product = products.find(p => p.id === productId);
-
-            if (!product) {
-                console.error('Product not found:', productId);
-                return;
-            }
-
-            // Visual feedback
-            const originalHtml = this.innerHTML;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            this.disabled = true;
-
-            // Add to cart
-            if (addToCart(product, 1)) {
-                this.innerHTML = '<i class="fas fa-check"></i> Added!';
-                setTimeout(() => {
-                    this.innerHTML = originalHtml;
-                    this.disabled = false;
-                }, 2000);
-            } else {
-                this.innerHTML = originalHtml;
-                this.disabled = false;
-            }
-        });
+        // Remove existing listeners to prevent duplicates
+        button.removeEventListener('click', handleAddToCart);
+        button.addEventListener('click', handleAddToCart);
     });
+}
+
+function handleAddToCart(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const button = e.currentTarget;
+    const productId = parseInt(button.dataset.id);
+
+    // Try to find product in allProducts
+    let product = allProducts.find(p => p.id === productId);
+
+    // If not found, create from data attributes
+    if (!product) {
+        product = {
+            id: productId,
+            title: button.dataset.title,
+            price: parseFloat(button.dataset.price),
+            image: button.dataset.image,
+            thumbnail: button.dataset.image
+        };
+    }
+
+    if (!product) {
+        console.error('Product not found:', productId);
+        return;
+    }
+
+    // Visual feedback
+    const originalHtml = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+
+    // Add to cart
+    if (addToCart(product, 1)) {
+        button.innerHTML = '<i class="fas fa-check"></i> Added!';
+        setTimeout(() => {
+            button.innerHTML = originalHtml;
+            button.disabled = false;
+        }, 2000);
+    } else {
+        button.innerHTML = originalHtml;
+        button.disabled = false;
+    }
 }
 
 // ===============================
@@ -310,10 +395,16 @@ function attachCartEventListeners(products) {
 // ===============================
 function filterProducts() {
     const category = document.getElementById('categoryFilter')?.value || 'all';
-    const minPrice = parseFloat(document.getElementById('priceMin')?.value) || 0;
-    const maxPrice = parseFloat(document.getElementById('priceMax')?.value) || 1000;
+    const minPrice = 0;
+    // Get maxPrice from either new single range input or legacy inputs
+    const priceRange = document.getElementById('priceRange');
+    const maxPrice = priceRange ?
+        parseFloat(priceRange.value) :
+        (parseFloat(document.getElementById('priceMax')?.value) || 100000);
     const searchTerm = document.getElementById('searchInput')?.value?.toLowerCase() || '';
     const sortBy = document.getElementById('sortFilter')?.value || 'default';
+
+    console.log('[v0] Filtering with maxPrice:', maxPrice);
 
     // Apply filters
     filteredProducts = allProducts.filter(product => {
@@ -341,12 +432,6 @@ function filterProducts() {
 
     // Render filtered products
     renderProducts(filteredProducts);
-
-    // Update price range display
-    const priceDisplay = document.getElementById('priceDisplay');
-    if (priceDisplay) {
-        priceDisplay.textContent = `₹${minPrice} - ₹${maxPrice}`;
-    }
 }
 
 function sortProducts(products, sortBy) {
@@ -399,7 +484,20 @@ function setupFilters() {
         categoryFilter.addEventListener('change', filterProducts);
     }
 
-    // Price range filters
+    // Price range filters (new single range input)
+    const priceRange = document.getElementById('priceRange');
+    if (priceRange) {
+        priceRange.addEventListener('input', (e) => {
+            const maxPrice = parseInt(e.target.value);
+            const priceValue = document.getElementById('priceValue');
+            if (priceValue) {
+                priceValue.textContent = `₹0 - ₹${maxPrice.toLocaleString('en-IN')}`;
+            }
+            filterProducts();
+        });
+    }
+
+    // Price range filters (legacy support)
     const priceMin = document.getElementById('priceMin');
     const priceMax = document.getElementById('priceMax');
     if (priceMin && priceMax) {
@@ -443,6 +541,9 @@ async function loadAllProducts() {
         const data = await response.json();
         allProducts = data.products;
         filteredProducts = [...allProducts];
+
+        // Make products available globally for other modules
+        window.allProducts = allProducts;
 
         console.log(`Loaded ${allProducts.length} products`);
 
@@ -492,18 +593,10 @@ async function loadLatestProducts() {
     }
 }
 
-// ===============================
-// PRODUCT DETAILS
-// ===============================
 async function loadProductDetails() {
     const productId = getQueryParam('id');
-    if (!productId) {
-        window.location.href = 'products.html';
-        return;
-    }
-
     const container = document.getElementById('productDetails');
-    if (!container) return;
+    if (!container || !productId) return;
 
     showLoading(container);
 
@@ -538,121 +631,95 @@ function renderProductDetails(product) {
     const isInStock = stock > 0;
 
     container.innerHTML = `
-        <div class="row">
-            <!-- Product Images -->
-            <div class="col-lg-6 mb-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body p-0">
-                        <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
-                            <div class="carousel-inner">
+        <div class="product-details-wrapper">
+            <div class="row g-4">
+                <!-- Product Images Gallery -->
+                <div class="col-lg-6">
+                    <div class="product-image-gallery">
+                        <div class="product-main-image">
+                            <img id="mainProductImage" 
+                                 src="${images[0] || 'https://via.placeholder.com/500'}" 
+                                 alt="${product.title}"
+                                 onerror="this.src='https://via.placeholder.com/500'">
+                        </div>
+                        ${images.length > 1 ? `
+                            <div class="product-thumbnails">
                                 ${images.map((img, index) => `
-                                    <div class="carousel-item ${index === 0 ? 'active' : ''}">
-                                        <img src="${img}" 
-                                             class="d-block w-100" 
-                                             alt="${product.title}"
-                                             style="height: 400px; object-fit: contain;"
-                                             onerror="this.src='https://via.placeholder.com/500'">
-                                    </div>
+                                    <img src="${img}" 
+                                         alt="Product ${index + 1}"
+                                         class="thumbnail-img ${index === 0 ? 'active' : ''}"
+                                         onclick="document.getElementById('mainProductImage').src='${img}'; document.querySelectorAll('.thumbnail-img').forEach(el => el.classList.remove('active')); this.classList.add('active');"
+                                         onerror="this.src='https://via.placeholder.com/80'">
                                 `).join('')}
                             </div>
-                            ${images.length > 1 ? `
-                                <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
-                                    <span class="carousel-control-prev-icon"></span>
-                                </button>
-                                <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
-                                    <span class="carousel-control-next-icon"></span>
-                                </button>
-                            ` : ''}
-                        </div>
+                        ` : ''}
                     </div>
                 </div>
-            </div>
             
-            <!-- Product Info -->
-            <div class="col-lg-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <h1 class="h2 mb-3">${product.title}</h1>
+                <!-- Product Info -->
+                <div class="col-lg-6">
+                    <div class="product-info">
+                        <h1>${product.title}</h1>
                         
                         <!-- Rating -->
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="text-warning me-2">
-                                ${generateStarRating(rating)}
-                            </div>
-                            <span class="text-muted">(${rating.toFixed(1)}/5)</span>
-                            <span class="ms-3 badge bg-light text-dark">
-                                ${product.reviews || 0} reviews
-                            </span>
+                        <div class="product-rating">
+                            <div class="stars">${generateStarRating(rating)}</div>
+                            <span>(${rating.toFixed(1)}/5)</span>
+                            <span class="ms-3" style="font-size: 0.85rem; color: var(--secondary);">${product.reviews || 0} customer reviews</span>
                         </div>
                         
                         <!-- Price -->
-                        <div class="mb-4">
-                            <span class="display-4 fw-bold text-primary">${formatPrice(product.price)}</span>
+                        <div class="product-price">
+                            ${formatPrice(product.price)}
+                            ${product.discountPercentage ? `
+                                <span class="badge bg-danger ms-2">-${Math.round(product.discountPercentage)}%</span>
+                            ` : ''}
                         </div>
                         
                         <!-- Stock Status -->
-                        <div class="mb-4">
+                        <div class="mb-3">
                             ${isInStock ?
-            `<span class="badge bg-success p-2"><i class="fas fa-check me-1"></i> In Stock (${stock} available)</span>` :
-            `<span class="badge bg-danger p-2"><i class="fas fa-times me-1"></i> Out of Stock</span>`
+            `<span class="badge bg-success p-2"><i class="fas fa-check-circle me-1"></i>In Stock (${stock} available)</span>` :
+            `<span class="badge bg-danger p-2"><i class="fas fa-times-circle me-1"></i>Out of Stock</span>`
         }
                         </div>
                         
                         <!-- Description -->
-                        <div class="mb-4">
-                            <h5 class="mb-2">Description</h5>
-                            <p class="text-muted">${product.description || 'No description available.'}</p>
+                        <div class="product-description">
+                            ${product.description || 'No description available.'}
                         </div>
                         
-                        <!-- Details -->
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="mb-2">
-                                    <strong>Brand:</strong> ${product.brand || 'Not specified'}
-                                </div>
-                                <div class="mb-2">
-                                    <strong>Category:</strong> ${product.category || 'Uncategorized'}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-2">
-                                    <strong>SKU:</strong> ${product.sku || 'N/A'}
-                                </div>
-                                <div class="mb-2">
-                                    <strong>Weight:</strong> ${product.weight || 'Not specified'}
-                                </div>
-                            </div>
+                        <!-- Product Specs -->
+                        <div class="product-specs">
+                            <h6 class="mb-3">Product Details</h6>
+                            <ul class="specs-list">
+                                <li><span class="specs-label">Brand:</span><span class="specs-value">${product.brand || 'Not specified'}</span></li>
+                                <li><span class="specs-label">Category:</span><span class="specs-value">${product.category || 'Uncategorized'}</span></li>
+                                <li><span class="specs-label">SKU:</span><span class="specs-value">${product.sku || 'N/A'}</span></li>
+                                <li><span class="specs-label">Weight:</span><span class="specs-value">${product.weight || 'Not specified'}</span></li>
+                            </ul>
                         </div>
                         
                         <!-- Quantity & Actions -->
-                        <div class="border-top pt-4">
-                            <div class="row align-items-center mb-4">
-                                <div class="col-auto">
-                                    <label class="form-label mb-0">Quantity:</label>
-                                </div>
-                                <div class="col-auto">
-                                    <div class="input-group" style="width: 150px;">
-                                        <button class="btn btn-outline-secondary" type="button" id="decreaseQty">-</button>
-                                        <input type="number" class="form-control text-center" id="quantity" value="1" min="1" max="${stock}">
-                                        <button class="btn btn-outline-secondary" type="button" id="increaseQty">+</button>
-                                    </div>
-                                </div>
-                                <div class="col">
-                                    <div class="text-end">
-                                        <strong>Total:</strong> <span id="totalPrice" class="text-primary fs-4">${formatPrice(product.price)}</span>
-                                    </div>
-                                </div>
+                        <div class="quantity-selector mt-4">
+                            <label>Quantity:</label>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" id="decreaseQty"><i class="fas fa-minus"></i></button>
+                                <input type="number" class="form-control" id="quantity" value="1" min="1" max="${stock || 999}">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" id="increaseQty"><i class="fas fa-plus"></i></button>
+                                <span class="ms-auto" style="font-weight: 600; color: var(--primary);">Total: <span id="totalPrice">${formatPrice(product.price)}</span></span>
                             </div>
-                            
-                            <div class="d-flex gap-3">
-                                <button class="btn btn-primary btn-lg flex-grow-1 ${!isInStock ? 'disabled' : ''}" 
-                                        id="addToCartBtn" ${!isInStock ? 'disabled' : ''}>
-                                    <i class="fas fa-cart-plus me-2"></i>Add to Cart
-                                </button>
-                                <button class="btn btn-outline-danger btn-lg" id="wishlistBtn">
-                                    <i class="fas fa-heart"></i>
-                                </button>
-                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="product-actions">
+                            <button class="btn btn-primary ${!isInStock ? 'disabled' : ''}" 
+                                    id="addToCartBtn" ${!isInStock ? 'disabled' : ''}>
+                                <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                            </button>
+                            <button class="btn btn-outline-primary" id="wishlistBtn">
+                                <i class="fas fa-heart me-2"></i>Add to Wishlist
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -712,7 +779,6 @@ function setupProductDetailListeners(product) {
     if (addToCartBtn) {
         addToCartBtn.addEventListener('click', () => {
             const quantity = parseInt(quantityInput.value) || 1;
-            product.requestedQuantity = quantity;
 
             if (addToCart(product, quantity)) {
                 // Visual feedback
@@ -748,29 +814,27 @@ async function loadRelatedProducts(category) {
     if (!container || !category) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/products/category/${encodeURIComponent(category)}?limit=4`);
+        const response = await fetch(`${API_BASE_URL}/products/category/${encodeURIComponent(category)}?limit=8`);
         if (!response.ok) return;
 
         const data = await response.json();
-        const products = data.products.filter(p => p.id !== parseInt(getQueryParam('id')));
+        const currentProductId = parseInt(getQueryParam('id'));
+        const relatedProducts = data.products.filter(p => p.id !== currentProductId).slice(0, 4);
 
-        if (products.length === 0) {
+        if (relatedProducts.length === 0) {
             container.style.display = 'none';
             return;
         }
 
         container.innerHTML = `
-            <h3 class="mb-4">Related Products</h3>
-            <div class="row" id="relatedProductsGrid"></div>
+            <h2 class="section-title mb-4">Related Products</h2>
+            <div class="related-products-grid">
+                ${relatedProducts.map(product => createProductCard(product)).join('')}
+            </div>
         `;
 
-        const grid = document.getElementById('relatedProductsGrid');
-        products.forEach(product => {
-            grid.innerHTML += createProductCard(product);
-        });
-
         // Attach event listeners
-        attachCartEventListeners(products);
+        attachCartEventListeners(relatedProducts);
 
     } catch (error) {
         console.error('Error loading related products:', error);
@@ -785,16 +849,22 @@ function initializePage() {
     const path = window.location.pathname;
     const page = path.split('/').pop() || 'index.html';
 
-    console.log('Initializing page:', page);
+    console.log('[v0] Products.js: Initializing page:', page);
 
-    // Update cart count
-    updateCartCount();
+    // Update cart count and auth button on all pages
+    if (typeof window.updateCartCount === 'function') {
+        window.updateCartCount();
+    }
+
+    // Call updateAuthButton
+    updateAuthButton();
 
     // Initialize based on page
     if (page === 'index.html' || path === '/' || path === '' || path.endsWith('/')) {
         loadLatestProducts();
     } else if (page === 'products.html') {
         loadAllProducts();
+        setupFilters();
     } else if (page.includes('product-details.html')) {
         loadProductDetails();
     }
@@ -810,8 +880,14 @@ window.filterProducts = filterProducts;
 window.addToCart = addToCart;
 window.formatPrice = formatPrice;
 window.renderProducts = renderProducts;
+window.updateAuthButton = updateAuthButton;
+window.allProducts = allProducts;
 
 // ===============================
 // DOM READY
 // ===============================
-document.addEventListener('DOMContentLoaded', initializePage);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializePage);
+} else {
+    initializePage();
+}

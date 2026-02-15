@@ -217,10 +217,11 @@ async function cacheFirstWithNetworkFallback(event) {
 // Network First with Cache Fallback (for API/dynamic content)
 async function networkFirstWithCacheFallback(event) {
     const request = event.request;
+    const requestUrl = request.url || '';
 
     try {
         // Try network first
-        console.log(`[SW ${APP_VERSION}] Network first attempt:`, request.url);
+        console.log(`[SW ${APP_VERSION}] Network first attempt:`, requestUrl);
         const networkResponse = await fetch(request);
 
         // Cache successful responses (except opaque responses)
@@ -238,13 +239,30 @@ async function networkFirstWithCacheFallback(event) {
         const cachedResponse = await caches.match(request);
 
         if (cachedResponse) {
-            console.log(`[SW ${APP_VERSION}] Serving from cache (network failed):`, request.url);
+            console.log(`[SW ${APP_VERSION}] Serving from cache (network failed):`, requestUrl);
             return cachedResponse;
         }
 
+        // For images and external resources, return a placeholder response
+        if (requestUrl.includes('/placeholder') || requestUrl.includes('via.placeholder') || requestUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+            console.log(`[SW ${APP_VERSION}] Returning placeholder image for:`, requestUrl);
+            return new Response(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="#ccc" width="100" height="100"/><text x="50" y="50" text-anchor="middle" dy=".3em" fill="#999" font-size="12">No Image</text></svg>',
+                {
+                    headers: { 'Content-Type': 'image/svg+xml' },
+                    status: 200
+                }
+            );
+        }
+
         // No cache, return appropriate error
-        if (request.headers.get('accept').includes('text/html')) {
-            return getOfflinePage();
+        try {
+            const acceptHeader = request.headers.get('accept') || '';
+            if (acceptHeader.includes('text/html')) {
+                return getOfflinePage();
+            }
+        } catch (headerError) {
+            console.warn(`[SW ${APP_VERSION}] Could not read request headers:`, headerError);
         }
 
         if (request.headers.get('accept').includes('application/json')) {

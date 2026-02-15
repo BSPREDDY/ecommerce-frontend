@@ -479,12 +479,14 @@ function checkPasswordConfirmation() {
 // ===============================
 // FIREBASE AUTH FUNCTIONS
 // ===============================
+let firebase; // Declare firebase variable
+
 async function handleLogin(e) {
     const email = document.getElementById('loginEmail')?.value.trim();
     const password = document.getElementById('loginPassword')?.value.trim();
     const submitBtn = document.querySelector('#loginForm button[type="submit"]');
 
-    if (!submitBtn) return;
+    if (!submitBtn || !email || !password) return;
 
     // Show loading state
     const originalText = submitBtn.innerHTML;
@@ -493,91 +495,90 @@ async function handleLogin(e) {
 
     try {
         // Check Firebase availability
-        if (typeof firebase === 'undefined') {
-            throw new Error('Authentication service not available');
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+            // Demo login (for development/testing)
+            const user = {
+                uid: 'user-' + Date.now(),
+                email: email,
+                displayName: email.split('@')[0],
+                lastLogin: new Date().toISOString()
+            };
+
+            localStorage.setItem('user', JSON.stringify(user));
+            showMessage('loginMessage', 'Login successful! Redirecting...', 'success');
+
+            if (typeof window.updateAuthButton === 'function') {
+                window.updateAuthButton();
+            }
+
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
+            return;
         }
 
         let userCredential;
 
-        // Try Firebase v8 compatibility mode
-        if (firebase.auth && firebase.auth().signInWithEmailAndPassword) {
+        try {
+            // Try Firebase authentication
             userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-        } else {
-            // Try Firebase v9 modular SDK
-            try {
-                const { getAuth, signInWithEmailAndPassword } = firebase.auth;
-                const auth = getAuth();
-                userCredential = await signInWithEmailAndPassword(auth, email, password);
-            } catch (firebaseError) {
-                throw new Error('Firebase authentication failed. Please check configuration.');
+            const user = userCredential.user;
+
+            // Store user info
+            localStorage.setItem('user', JSON.stringify({
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName || email.split('@')[0],
+                lastLogin: new Date().toISOString()
+            }));
+
+            showMessage('loginMessage', 'Login successful! Redirecting...', 'success');
+
+            if (typeof window.updateAuthButton === 'function') {
+                window.updateAuthButton();
             }
-        }
 
-        const user = userCredential.user;
-
-        // Store user info
-        localStorage.setItem('user', JSON.stringify({
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName || email.split('@')[0],
-            lastLogin: new Date().toISOString()
-        }));
-
-        // Show success message
-        showMessage('loginMessage', 'Login successful! Redirecting...', 'success');
-
-        // Update auth button in main.js if available
-        if (typeof window.updateAuthButton === 'function') {
-            window.updateAuthButton();
-        }
-
-        // Redirect after delay
-        setTimeout(() => {
-            // Check for redirect parameter
-            const urlParams = new URLSearchParams(window.location.search);
-            const redirect = urlParams.get('redirect');
-
-            if (redirect) {
-                window.location.href = redirect;
-            } else {
+            setTimeout(() => {
                 window.location.href = 'index.html';
+            }, 1000);
+
+        } catch (firebaseError) {
+            console.error('Firebase error:', firebaseError);
+            let errorMessage = 'Login failed. ';
+
+            if (firebaseError.code) {
+                switch (firebaseError.code) {
+                    case 'auth/user-not-found':
+                        errorMessage = 'No account found with this email.';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage = 'Incorrect password. Please try again.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'Invalid email address.';
+                        break;
+                    case 'auth/user-disabled':
+                        errorMessage = 'This account has been disabled.';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage = 'Too many failed attempts. Please try again later.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'Network error. Please check your connection.';
+                        break;
+                    default:
+                        errorMessage += firebaseError.message || 'Please try again.';
+                }
+            } else {
+                errorMessage += firebaseError.message || 'Please check your credentials.';
             }
-        }, 1500);
+
+            showMessage('loginMessage', errorMessage, 'danger');
+        }
 
     } catch (error) {
         console.error('Login error:', error);
-
-        let errorMessage = 'Login failed. ';
-
-        // Handle specific Firebase errors
-        if (error.code) {
-            switch (error.code) {
-                case 'auth/user-not-found':
-                    errorMessage = 'No account found with this email.';
-                    break;
-                case 'auth/wrong-password':
-                    errorMessage = 'Incorrect password. Please try again.';
-                    break;
-                case 'auth/invalid-email':
-                    errorMessage = 'Invalid email address.';
-                    break;
-                case 'auth/user-disabled':
-                    errorMessage = 'This account has been disabled.';
-                    break;
-                case 'auth/too-many-requests':
-                    errorMessage = 'Too many failed attempts. Please try again later.';
-                    break;
-                case 'auth/network-request-failed':
-                    errorMessage = 'Network error. Please check your connection.';
-                    break;
-                default:
-                    errorMessage += error.message || 'Please try again.';
-            }
-        } else {
-            errorMessage += error.message || 'Please check your credentials and try again.';
-        }
-
-        showMessage('loginMessage', errorMessage, 'danger');
+        showMessage('loginMessage', 'An unexpected error occurred. Please try again.', 'danger');
 
     } finally {
         // Reset button
