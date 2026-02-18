@@ -30,6 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeNavbar();
 
     updateCartCount();
+    
+    // Initialize wishlist count
+    if (typeof updateWishlistCount === 'function') {
+        updateWishlistCount();
+    }
 
     // Listen for cart changes using storage events (cross-tab)
     window.addEventListener('storage', (e) => {
@@ -37,12 +42,26 @@ document.addEventListener('DOMContentLoaded', () => {
             updateCartCount();
             console.log('[v0] Cart updated from another tab/window');
         }
+        if (e.key === 'wishlist') {
+            if (typeof updateWishlistCount === 'function') {
+                updateWishlistCount();
+            }
+            console.log('[v0] Wishlist updated from another tab/window');
+        }
     });
 
     // Listen for custom cart update events (same tab)
     window.addEventListener('cartUpdated', () => {
         updateCartCount();
         console.log('[v0] Cart updated (custom event)');
+    });
+
+    // Listen for custom wishlist update events (same tab)
+    window.addEventListener('wishlistUpdated', () => {
+        if (typeof updateWishlistCount === 'function') {
+            updateWishlistCount();
+        }
+        console.log('[v0] Wishlist updated (custom event)');
     });
 
     // Scroll to top button

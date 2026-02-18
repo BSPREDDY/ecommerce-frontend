@@ -1,7 +1,3 @@
-// products.js - COMPLETE FIXED VERSION
-// ===============================
-// Products Management Module
-// ===============================
 
 // API Base URL
 if (typeof window.API_BASE_URL === 'undefined') {
@@ -268,10 +264,11 @@ function createProductCard(product, isRelated = false) {
     return `
         <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
             <div class="card product-card h-100 border-0 shadow-sm">
-                <div class="position-relative product-image-container">
+                <div class="position-relative product-image-container" style="overflow: hidden; background: #f8f9fa;">
                     <img src="${image}" 
                          class="card-img-top product-img" 
                          alt="${product.title}"
+                         style="height: 250px; object-fit: cover; width: 100%;"
                          onerror="this.src='https://via.placeholder.com/300'">
                     ${stock <= 10 && stock > 0 ?
             `<span class="badge bg-warning position-absolute top-0 end-0 m-2">Low Stock</span>` :
@@ -294,15 +291,33 @@ function createProductCard(product, isRelated = false) {
                         </div>
                         <small class="text-muted ms-1">(${rating.toFixed(1)})</small>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="text-primary fw-bold fs-5">${formatPrice(product.price)}</span>
-                        <button class="btn btn-sm btn-primary add-to-cart-btn" 
+                    <div class="d-flex align-items-center gap-2 mt-auto mb-2 flex-wrap">
+                        ${product.discountPercentage ? `
+                            <span class="text-muted" style="text-decoration: line-through; font-size: 0.9rem;">
+                                ${formatPrice(product.price / (1 - product.discountPercentage / 100))}
+                            </span>
+                            <span class="text-primary fw-bold fs-5">${formatPrice(product.price)}</span>
+                            <span class="badge bg-danger">-${Math.round(product.discountPercentage)}%</span>
+                        ` : `
+                            <span class="text-primary fw-bold fs-5">${formatPrice(product.price)}</span>
+                        `}
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                        <button class="btn btn-sm btn-primary add-to-cart-btn flex-grow-1" 
                                 data-id="${product.id}"
                                 data-title="${product.title}"
                                 data-price="${product.price}"
                                 data-image="${image}"
                                 ${stock === 0 ? 'disabled' : ''}>
-                            <i class="fas fa-cart-plus"></i> Add
+                            <i class="fas fa-shopping-cart me-1"></i> Cart
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger add-to-wishlist-btn flex-grow-1" 
+                                data-id="${product.id}"
+                                data-title="${product.title}"
+                                data-price="${product.price}"
+                                data-image="${image}"
+                                title="Add to wishlist">
+                            <i class="far fa-heart"></i> Wishlist
                         </button>
                     </div>
                 </div>
@@ -386,6 +401,17 @@ function attachCartEventListeners(products) {
         button.removeEventListener('click', handleAddToCart);
         button.addEventListener('click', handleAddToCart);
     });
+
+    // Attach wishlist event listeners
+    document.querySelectorAll('.add-to-wishlist-btn').forEach(button => {
+        button.removeEventListener('click', handleAddToWishlist);
+        button.addEventListener('click', handleAddToWishlist);
+    });
+
+    // Update wishlist button states
+    if (typeof updateWishlistButtons === 'function') {
+        updateWishlistButtons();
+    }
 }
 
 function handleAddToCart(e) {
@@ -429,6 +455,54 @@ function handleAddToCart(e) {
     } else {
         button.innerHTML = originalHtml;
         button.disabled = false;
+    }
+}
+
+function handleAddToWishlist(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const button = e.currentTarget;
+    const productId = parseInt(button.dataset.id);
+
+    // Try to find product in allProducts
+    let product = allProducts.find(p => p.id === productId);
+
+    // If not found, create from data attributes
+    if (!product) {
+        product = {
+            id: productId,
+            title: button.dataset.title,
+            price: parseFloat(button.dataset.price),
+            image: button.dataset.image,
+            thumbnail: button.dataset.image
+        };
+    }
+
+    if (!product) {
+        console.error('Product not found:', productId);
+        return;
+    }
+
+    // Check if already in wishlist
+    if (typeof isInWishlist === 'function' && isInWishlist(productId)) {
+        if (typeof removeFromWishlist === 'function') {
+            removeFromWishlist(productId);
+            button.classList.remove('in-wishlist');
+            button.innerHTML = '<i class="far fa-heart"></i> Wishlist';
+            if (typeof updateWishlistCount === 'function') {
+                updateWishlistCount();
+            }
+        }
+    } else {
+        if (typeof addToWishlist === 'function') {
+            addToWishlist(product);
+            button.classList.add('in-wishlist');
+            button.innerHTML = '<i class="fas fa-heart"></i> Wishlist';
+            if (typeof updateWishlistCount === 'function') {
+                updateWishlistCount();
+            }
+        }
     }
 }
 
@@ -574,7 +648,7 @@ async function loadAllProducts() {
 
     try {
         console.log('Loading products from API...');
-        const response = await fetch(`${API_BASE_URL}/products?limit=100`);
+        const response = await fetch(`${API_BASE_URL}/products?limit=10000`);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -609,7 +683,7 @@ async function loadLatestProducts() {
     showLoading(container);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/products?limit=8`);
+        const response = await fetch(`${API_BASE_URL}/products?limit=10000`);
         if (!response.ok) throw new Error('Failed to load products');
 
         const data = await response.json();
@@ -707,12 +781,15 @@ function renderProductDetails(product) {
                         <div class="product-rating">
                             <div class="stars">${generateStarRating(rating)}</div>
                             <span>(${rating.toFixed(1)}/5)</span>
-                            <span class="ms-3" style="font-size: 0.85rem; color: var(--secondary);">${product.reviews || 0} customer reviews</span>
+                            <span class="ms-3" style="font-size: 0.85rem; color: var(--secondary);">${product.reviewCount || Math.floor(rating * 50)} customer reviews</span>
                         </div>
                         
                         <!-- Price -->
                         <div class="product-price">
-                            ${formatPrice(product.price)}
+                            ${product.discountPercentage ? `
+                                <span class="original-price" style="text-decoration: line-through; color: var(--secondary); font-size: 0.9rem; margin-right: 0.5rem;">${formatPrice(product.price / (1 - product.discountPercentage / 100))}</span>
+                            ` : ''}
+                            <span class="discounted-price" style="font-size: 1.5rem; font-weight: 600; color: var(--primary);">${formatPrice(product.price)}</span>
                             ${product.discountPercentage ? `
                                 <span class="badge bg-danger ms-2">-${Math.round(product.discountPercentage)}%</span>
                             ` : ''}
@@ -869,14 +946,25 @@ async function loadRelatedProducts(category) {
         }
 
         container.innerHTML = `
-            <h2>Related Products</h2>
-            <div class="related-products-grid">
+            <h2 class="mb-4">Related Products</h2>
+            <div class="row">
                 ${relatedProducts.map(product => createProductCard(product, true)).join('')}
             </div>
         `;
 
-        // Attach event listeners
+        // Attach event listeners for cart and wishlist
         attachCartEventListeners(relatedProducts);
+        
+        // Attach wishlist event listeners
+        document.querySelectorAll('.add-to-wishlist-btn').forEach(button => {
+            button.removeEventListener('click', handleAddToWishlist);
+            button.addEventListener('click', handleAddToWishlist);
+        });
+        
+        // Update wishlist button states
+        if (typeof updateWishlistButtons === 'function') {
+            updateWishlistButtons();
+        }
 
     } catch (error) {
         console.error('Error loading related products:', error);
@@ -887,7 +975,18 @@ async function loadRelatedProducts(category) {
 // ===============================
 // PAGE INITIALIZATION
 // ===============================
+
+// Flag to prevent multiple initializations
+let pageInitialized = false;
+
 function initializePage() {
+    // Prevent duplicate initialization
+    if (pageInitialized) {
+        console.log('[v0] Products.js: Page already initialized, skipping...');
+        return;
+    }
+    pageInitialized = true;
+
     const path = window.location.pathname;
     const page = path.split('/').pop() || 'index.html';
 
@@ -917,7 +1016,7 @@ window.renderProducts = renderProducts;
 window.allProducts = allProducts;
 
 // ===============================
-// DOM READY
+// DOM READY - SINGLE INITIALIZATION
 // ===============================
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializePage);

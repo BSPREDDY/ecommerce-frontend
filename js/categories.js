@@ -197,11 +197,11 @@ function createProductCard(product) {
     return `
         <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
             <div class="card product-card h-100 shadow-sm border-0">
-                <div class="position-relative">
+                <div class="position-relative product-image-container" style="overflow: hidden; background: #f8f9fa;">
                     <img src="${image}" 
-                         class="card-img-top" 
+                         class="card-img-top product-img" 
                          alt="${product.title}"
-                         style="height: 120px; object-fit: cover;"
+                         style="height: 250px; object-fit: cover; width: 100%;"
                          onerror="this.src='https://via.placeholder.com/300'">
                     <span class="badge ${isInStock ? 'bg-success' : 'bg-danger'} position-absolute top-0 end-0 m-2">
                         ${isInStock ? 'In Stock' : 'Out of Stock'}
@@ -219,15 +219,33 @@ function createProductCard(product) {
                         <div class="text-warning">${generateStarRating(rating)}</div>
                         <small class="text-muted ms-1">(${rating.toFixed(1)})</small>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="text-primary fw-bold fs-5">${formatPrice(product.price)}</span>
-                        <button class="btn btn-sm btn-primary add-to-cart-btn" 
+                    <div class="d-flex align-items-center gap-2 mt-auto mb-2 flex-wrap">
+                        ${product.discountPercentage ? `
+                            <span class="text-muted" style="text-decoration: line-through; font-size: 0.9rem;">
+                                ${formatPrice(product.price / (1 - product.discountPercentage / 100))}
+                            </span>
+                            <span class="text-primary fw-bold fs-5">${formatPrice(product.price)}</span>
+                            <span class="badge bg-danger">-${Math.round(product.discountPercentage)}%</span>
+                        ` : `
+                            <span class="text-primary fw-bold fs-5">${formatPrice(product.price)}</span>
+                        `}
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                        <button class="btn btn-sm btn-primary add-to-cart-btn flex-grow-1" 
                                 data-id="${product.id}"
                                 data-title="${product.title}"
                                 data-price="${product.price}"
                                 data-image="${image}"
                                 ${!isInStock ? 'disabled' : ''}>
-                            <i class="fas fa-cart-plus"></i> Add
+                            <i class="fas fa-shopping-cart me-1"></i> Cart
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger add-to-wishlist-btn flex-grow-1" 
+                                data-id="${product.id}"
+                                data-title="${product.title}"
+                                data-price="${product.price}"
+                                data-image="${image}"
+                                title="Add to wishlist">
+                            <i class="far fa-heart"></i> Wishlist
                         </button>
                     </div>
                 </div>
@@ -255,7 +273,7 @@ async function loadCategoryProducts() {
 
     try {
         console.log('[Categories] Loading products from API...');
-        const response = await fetch(`${API_URL}/products?limit=100`);
+        const response = await fetch(`${API_URL}/products?limit=10000`);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -390,6 +408,9 @@ function displayCategoryProducts(products) {
 
     // Attach event listeners to Add to Cart buttons
     attachCartEventListeners();
+    
+    // Attach wishlist event listeners
+    attachWishlistEventListeners();
 }
 
 function showAllCategories() {
@@ -476,6 +497,58 @@ function handleAddToCart(e) {
 
         // Show notification
         showNotification(`${product.title} added to cart!`, 'success');
+    }
+}
+
+// ===============================
+// WISHLIST FUNCTIONS
+// ===============================
+
+function attachWishlistEventListeners() {
+    document.querySelectorAll('.add-to-wishlist-btn').forEach(button => {
+        button.removeEventListener('click', handleAddToWishlist);
+        button.addEventListener('click', handleAddToWishlist);
+    });
+    
+    // Update wishlist button states
+    if (typeof updateWishlistButtons === 'function') {
+        updateWishlistButtons();
+    }
+}
+
+function handleAddToWishlist(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const button = e.currentTarget;
+    const productId = parseInt(button.dataset.id);
+
+    const product = {
+        id: productId,
+        title: button.dataset.title,
+        price: parseFloat(button.dataset.price),
+        image: button.dataset.image
+    };
+
+    // Check if already in wishlist
+    if (typeof isInWishlist === 'function' && isInWishlist(productId)) {
+        if (typeof removeFromWishlist === 'function') {
+            removeFromWishlist(productId);
+            button.classList.remove('in-wishlist');
+            button.innerHTML = '<i class="far fa-heart"></i> Wishlist';
+            if (typeof updateWishlistCount === 'function') {
+                updateWishlistCount();
+            }
+        }
+    } else {
+        if (typeof addToWishlist === 'function') {
+            addToWishlist(product);
+            button.classList.add('in-wishlist');
+            button.innerHTML = '<i class="fas fa-heart"></i> Wishlist';
+            if (typeof updateWishlistCount === 'function') {
+                updateWishlistCount();
+            }
+        }
     }
 }
 
@@ -578,7 +651,17 @@ function initializeHomePageCategories() {
 // PAGE INITIALIZATION
 // ===============================
 
+// Flag to prevent multiple initializations
+let categoriesPageInitialized = false;
+
 function initializePage() {
+    // Prevent duplicate initialization
+    if (categoriesPageInitialized) {
+        console.log('[v0] Categories.js: Page already initialized, skipping...');
+        return;
+    }
+    categoriesPageInitialized = true;
+
     const path = window.location.pathname;
     const page = path.split('/').pop() || 'index.html';
 
