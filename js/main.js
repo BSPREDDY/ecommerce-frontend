@@ -233,23 +233,58 @@ function updateAuthButton() {
 
         authBtn.innerHTML = `<i class="fas fa-user-circle me-2"></i>${shortName}`;
         authBtn.href = '#';
-        authBtn.onclick = e => {
+
+        // Remove any existing click handlers to prevent duplicates
+        authBtn.onclick = null;
+
+        // Add new click handler for logout
+        authBtn.addEventListener('click', function logoutHandler(e) {
             e.preventDefault();
+            e.stopPropagation(); // Prevent event bubbling
+
             if (confirm('Are you sure you want to logout?')) {
+                // Clear ALL user-related data
                 localStorage.removeItem('user');
+                localStorage.removeItem('demoUsers');
+
+                // Clear any Firebase session if available
+                if (typeof firebase !== 'undefined' && firebase.auth) {
+                    firebase.auth().signOut().catch(err => console.log('Firebase signout:', err));
+                }
+
+                // Update button immediately
                 updateAuthButton();
+
+                // Show notification
                 showNotification('Logged out successfully', 'info');
+
+                // Redirect to home page after a short delay
                 setTimeout(() => {
                     window.location.href = 'index.html';
                 }, 800);
             }
-        };
+
+            // Remove this event listener after handling to prevent duplicates
+            authBtn.removeEventListener('click', logoutHandler);
+        }, { once: true }); // Use once:true to auto-remove after execution
+
     } else {
         authBtn.innerHTML = '<i class="fas fa-user me-1"></i>Login';
         authBtn.href = 'auth.html';
+
+        // Remove any existing click handlers
         authBtn.onclick = null;
+
+        // Ensure it goes to auth.html
+        authBtn.addEventListener('click', function loginHandler(e) {
+            // Let the default href behavior work
+            // This ensures it always goes to auth.html
+            console.log('Navigating to auth page');
+        }, { once: true });
     }
 }
+
+// Also update the logout function in auth.js to clear properly 
 
 // ================= NOTIFICATIONS =================
 

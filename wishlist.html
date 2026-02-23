@@ -11,6 +11,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Custom JS (Load order matters) -->
+    <script src="js/config.js"></script>
+    <script src="js/firebase-config.js"></script>
 </head>
 
 <body>
@@ -53,7 +58,7 @@
     </nav>
 
     <!-- Wishlist Section -->
-    <section class="wishlist-section mt-5">
+    <section class="wishlist-section">
         <div class="container">
             <div class="row mb-4">
                 <div class="col-md-8">
@@ -126,11 +131,6 @@
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <!-- Custom JS -->
-    <script src="js/config.js"></script>
-    <script src="js/firebase-config.js"></script>
     <script src="js/cart.js"></script>
     <script src="js/wishlist.js"></script>
     <script src="js/products.js"></script>

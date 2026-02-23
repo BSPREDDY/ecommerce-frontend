@@ -1,10 +1,10 @@
 const CONFIG = {
     FIREBASE: {
-        apiKey: "YOUR_KEY",
-        authDomain: "YOUR_DOMAIN",
-        projectId: "YOUR_PROJECT",
-        storageBucket: "YOUR_BUCKET",
-        messagingSenderId: "YOUR_ID",
-        appId: "YOUR_APP_ID"
+        apiKey: "your-real-key",
+        authDomain: "your-real-domain",
+        projectId: "your-project-id",
+        storageBucket: "your-storage-bucket",
+        messagingSenderId: "your-id",
+        appId: "your-app-id"
     }
 };

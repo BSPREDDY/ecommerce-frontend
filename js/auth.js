@@ -1,4 +1,4 @@
-// auth.js - Authentication Module - FIXED
+// auth.js 
 // ===============================
 // Authentication with proper validation
 // ===============================
@@ -7,58 +7,41 @@ document.addEventListener('DOMContentLoaded', function () {
     // Check if on auth page
     if (!document.querySelector('.auth-container')) return;
 
+    // Log Firebase status for debugging
+    console.log('Firebase available:', typeof firebase !== 'undefined');
+    if (typeof firebase !== 'undefined') {
+        console.log('Firebase apps:', firebase.apps ? firebase.apps.length : 0);
+    }
+
     // Form elements
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
     const loginToggleBtn = document.getElementById('loginToggleBtn');
     const signupToggleBtn = document.getElementById('signupToggleBtn');
-    const loginEmail = document.getElementById('loginEmail');
-    const loginPassword = document.getElementById('loginPassword');
-    const signupName = document.getElementById('signupName');
-    const signupEmail = document.getElementById('signupEmail');
-    const signupPassword = document.getElementById('signupPassword');
-    const confirmPassword = document.getElementById('confirmPassword');
-    const togglePasswordBtns = document.querySelectorAll('.toggle-password');
-    const passwordStrengthMeter = document.getElementById('passwordStrengthMeter');
-    const passwordRequirements = document.getElementById('passwordRequirements');
     const forgotPassword = document.getElementById('forgotPassword');
 
     // Initialize with login form
     showLoginForm();
 
-    // Form toggle - Login form
+    // Form toggle - Show signup form (click on "Sign Up" button from login form)
     if (loginToggleBtn) {
-        loginToggleBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            showSignupForm();
-        });
+        // Remove any existing listeners first
+        loginToggleBtn.removeEventListener('click', showSignupFormHandler);
+        loginToggleBtn.addEventListener('click', showSignupFormHandler);
     }
 
-    // Form toggle - Signup form
+    // Form toggle - Show login form (click on "Login" button from signup form)
     if (signupToggleBtn) {
-        signupToggleBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            showLoginForm();
-        });
+        // Remove any existing listeners first
+        signupToggleBtn.removeEventListener('click', showLoginFormHandler);
+        signupToggleBtn.addEventListener('click', showLoginFormHandler);
     }
 
     // Toggle password visibility
-    if (togglePasswordBtns) {
-        togglePasswordBtns.forEach(btn => {
-            btn.addEventListener('click', function () {
-                const input = this.previousElementSibling;
-                if (!input) return;
-
-                const type = input.type === 'password' ? 'text' : 'password';
-                input.type = type;
-                this.innerHTML = type === 'password' ?
-                    '<i class="fas fa-eye"></i>' :
-                    '<i class="fas fa-eye-slash"></i>';
-            });
-        });
-    }
+    setupPasswordToggles();
 
     // Password strength checker
+    const signupPassword = document.getElementById('signupPassword');
     if (signupPassword) {
         signupPassword.addEventListener('input', function () {
             checkPasswordStrength(this.value);
@@ -66,37 +49,31 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Password confirmation check
+    const confirmPassword = document.getElementById('confirmPassword');
     if (confirmPassword) {
         confirmPassword.addEventListener('input', function () {
             checkPasswordConfirmation();
         });
     }
 
-    // Form submission with validation
+    // Form submission with validation - LOGIN
     if (loginForm) {
-        loginForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            if (validateLoginForm()) {
-                handleLogin(e);
-            }
-        });
+        // Remove any existing submit listeners
+        loginForm.removeEventListener('submit', handleLoginSubmit);
+        loginForm.addEventListener('submit', handleLoginSubmit);
     }
 
+    // Form submission with validation - SIGNUP
     if (signupForm) {
-        signupForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            if (validateSignupForm()) {
-                handleSignup(e);
-            }
-        });
+        // Remove any existing submit listeners
+        signupForm.removeEventListener('submit', handleSignupSubmit);
+        signupForm.addEventListener('submit', handleSignupSubmit);
     }
 
     // Forgot password
     if (forgotPassword) {
-        forgotPassword.addEventListener('click', function (e) {
-            e.preventDefault();
-            showForgotPasswordModal();
-        });
+        forgotPassword.removeEventListener('click', handleForgotPassword);
+        forgotPassword.addEventListener('click', handleForgotPassword);
     }
 
     // Check if user is already logged in
@@ -104,11 +81,150 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Add real-time validation
     addRealTimeValidation();
+
+    // Prevent form resubmission on page refresh
+    if (window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.href);
+    }
 });
 
 // ===============================
-// FORM VALIDATION FUNCTIONS - FIXED
+// EVENT HANDLERS
 // ===============================
+
+function showSignupFormHandler(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    showSignupForm();
+}
+
+function showLoginFormHandler(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    showLoginForm();
+}
+
+function handleLoginSubmit(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Prevent multiple submissions
+    if (this.classList.contains('submitting')) {
+        return;
+    }
+
+    if (validateLoginForm()) {
+        this.classList.add('submitting');
+        handleLogin(e);
+    }
+}
+
+function handleSignupSubmit(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Prevent multiple submissions
+    if (this.classList.contains('submitting')) {
+        return;
+    }
+
+    if (validateSignupForm()) {
+        this.classList.add('submitting');
+        handleSignup(e);
+    }
+}
+
+function handleForgotPassword(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    showForgotPasswordModal();
+}
+
+// ===============================
+// FORM DISPLAY FUNCTIONS
+// ===============================
+
+function showLoginForm() {
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const authTitle = document.getElementById('authTitle');
+    const authSubtitle = document.getElementById('authSubtitle');
+
+    if (loginForm) {
+        loginForm.classList.remove('form-hidden');
+        loginForm.reset();
+        loginForm.classList.remove('submitting');
+    }
+    if (signupForm) {
+        signupForm.classList.add('form-hidden');
+        signupForm.classList.remove('submitting');
+    }
+    if (authTitle) authTitle.textContent = "Welcome Back";
+    if (authSubtitle) authSubtitle.textContent = "Please login to your account";
+    document.title = "ShopEasy - Login";
+
+    // Clear messages and errors
+    clearMessages();
+    clearFieldErrors('login');
+}
+
+function showSignupForm() {
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const authTitle = document.getElementById('authTitle');
+    const authSubtitle = document.getElementById('authSubtitle');
+
+    if (signupForm) {
+        signupForm.classList.remove('form-hidden');
+        signupForm.reset();
+        signupForm.classList.remove('submitting');
+    }
+    if (loginForm) {
+        loginForm.classList.add('form-hidden');
+        loginForm.classList.remove('submitting');
+    }
+    if (authTitle) authTitle.textContent = "Create Account";
+    if (authSubtitle) authSubtitle.textContent = "Sign up to get started";
+    document.title = "ShopEasy - Sign Up";
+
+    // Clear messages, errors, and reset password strength
+    clearMessages();
+    clearFieldErrors('signup');
+    resetPasswordStrengthMeter();
+}
+
+// ===============================
+// PASSWORD TOGGLE SETUP
+// ===============================
+
+function setupPasswordToggles() {
+    const togglePasswordBtns = document.querySelectorAll('.toggle-password');
+
+    togglePasswordBtns.forEach(btn => {
+        // Remove existing listeners
+        btn.removeEventListener('click', togglePassword);
+        btn.addEventListener('click', togglePassword);
+    });
+}
+
+function togglePassword(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const input = this.previousElementSibling;
+    if (!input) return;
+
+    const type = input.type === 'password' ? 'text' : 'password';
+    input.type = type;
+    this.innerHTML = type === 'password' ?
+        '<i class="fas fa-eye"></i>' :
+        '<i class="fas fa-eye-slash"></i>';
+}
+
+// ===============================
+// FORM VALIDATION FUNCTIONS
+// ===============================
+
 function validateLoginForm() {
     const email = document.getElementById('loginEmail')?.value.trim();
     const password = document.getElementById('loginPassword')?.value.trim();
@@ -267,6 +383,7 @@ function addRealTimeValidation() {
 // ===============================
 // HELPER FUNCTIONS
 // ===============================
+
 function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -324,47 +441,6 @@ function showMessage(elementId, message, type = 'error') {
     }, 5000);
 }
 
-function showLoginForm() {
-    const loginForm = document.getElementById('loginForm');
-    const signupForm = document.getElementById('signupForm');
-    const authTitle = document.getElementById('authTitle');
-    const authSubtitle = document.getElementById('authSubtitle');
-
-    if (loginForm) {
-        loginForm.classList.remove('form-hidden');
-        loginForm.reset();
-    }
-    if (signupForm) signupForm.classList.add('form-hidden');
-    if (authTitle) authTitle.textContent = "Welcome Back";
-    if (authSubtitle) authSubtitle.textContent = "Please login to your account";
-    document.title = "ShopEasy - Login";
-
-    // Clear messages and errors
-    clearMessages();
-    clearFieldErrors('login');
-}
-
-function showSignupForm() {
-    const loginForm = document.getElementById('loginForm');
-    const signupForm = document.getElementById('signupForm');
-    const authTitle = document.getElementById('authTitle');
-    const authSubtitle = document.getElementById('authSubtitle');
-
-    if (signupForm) {
-        signupForm.classList.remove('form-hidden');
-        signupForm.reset();
-    }
-    if (loginForm) loginForm.classList.add('form-hidden');
-    if (authTitle) authTitle.textContent = "Create Account";
-    if (authSubtitle) authSubtitle.textContent = "Sign up to get started";
-    document.title = "ShopEasy - Sign Up";
-
-    // Clear messages, errors, and reset password strength
-    clearMessages();
-    clearFieldErrors('signup');
-    resetPasswordStrengthMeter();
-}
-
 function clearMessages() {
     const messages = document.querySelectorAll('.message');
     messages.forEach(msg => {
@@ -376,6 +452,7 @@ function clearMessages() {
 // ===============================
 // PASSWORD STRENGTH FUNCTIONS
 // ===============================
+
 function checkPasswordStrength(password) {
     if (!password) {
         resetPasswordStrengthMeter();
@@ -479,12 +556,12 @@ function checkPasswordConfirmation() {
 // ===============================
 // FIREBASE AUTH FUNCTIONS
 // ===============================
-let firebase; // Declare firebase variable
 
 async function handleLogin(e) {
     const email = document.getElementById('loginEmail')?.value.trim();
     const password = document.getElementById('loginPassword')?.value.trim();
     const submitBtn = document.querySelector('#loginForm button[type="submit"]');
+    const loginForm = document.getElementById('loginForm');
 
     if (!submitBtn || !email || !password) return;
 
@@ -496,7 +573,9 @@ async function handleLogin(e) {
     try {
         // Check Firebase availability
         if (typeof firebase === 'undefined' || !firebase.auth) {
-            // Demo login (for development/testing)
+            console.log('Firebase not available, using demo mode');
+
+            // Demo login
             const user = {
                 uid: 'user-' + Date.now(),
                 email: email,
@@ -517,73 +596,71 @@ async function handleLogin(e) {
             return;
         }
 
-        let userCredential;
+        // Firebase login
+        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
 
-        try {
-            // Try Firebase authentication
-            userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-            const user = userCredential.user;
+        // Store user info
+        localStorage.setItem('user', JSON.stringify({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || email.split('@')[0],
+            lastLogin: new Date().toISOString()
+        }));
 
-            // Store user info
-            localStorage.setItem('user', JSON.stringify({
-                uid: user.uid,
-                email: user.email,
-                displayName: user.displayName || email.split('@')[0],
-                lastLogin: new Date().toISOString()
-            }));
+        showMessage('loginMessage', 'Login successful! Redirecting...', 'success');
 
-            showMessage('loginMessage', 'Login successful! Redirecting...', 'success');
-
-            if (typeof window.updateAuthButton === 'function') {
-                window.updateAuthButton();
-            }
-
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1000);
-
-        } catch (firebaseError) {
-            console.error('Firebase error:', firebaseError);
-            let errorMessage = 'Login failed. ';
-
-            if (firebaseError.code) {
-                switch (firebaseError.code) {
-                    case 'auth/user-not-found':
-                        errorMessage = 'No account found with this email.';
-                        break;
-                    case 'auth/wrong-password':
-                        errorMessage = 'Incorrect password. Please try again.';
-                        break;
-                    case 'auth/invalid-email':
-                        errorMessage = 'Invalid email address.';
-                        break;
-                    case 'auth/user-disabled':
-                        errorMessage = 'This account has been disabled.';
-                        break;
-                    case 'auth/too-many-requests':
-                        errorMessage = 'Too many failed attempts. Please try again later.';
-                        break;
-                    case 'auth/network-request-failed':
-                        errorMessage = 'Network error. Please check your connection.';
-                        break;
-                    default:
-                        errorMessage += firebaseError.message || 'Please try again.';
-                }
-            } else {
-                errorMessage += firebaseError.message || 'Please check your credentials.';
-            }
-
-            showMessage('loginMessage', errorMessage, 'danger');
+        if (typeof window.updateAuthButton === 'function') {
+            window.updateAuthButton();
         }
+
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1000);
 
     } catch (error) {
         console.error('Login error:', error);
-        showMessage('loginMessage', 'An unexpected error occurred. Please try again.', 'danger');
+
+        let errorMessage = 'Login failed. ';
+
+        if (error.code) {
+            switch (error.code) {
+                case 'auth/user-not-found':
+                    errorMessage = 'No account found with this email.';
+                    break;
+                case 'auth/wrong-password':
+                    errorMessage = 'Incorrect password. Please try again.';
+                    break;
+                case 'auth/invalid-email':
+                    errorMessage = 'Invalid email address.';
+                    break;
+                case 'auth/user-disabled':
+                    errorMessage = 'This account has been disabled.';
+                    break;
+                case 'auth/too-many-requests':
+                    errorMessage = 'Too many failed attempts. Please try again later.';
+                    break;
+                case 'auth/network-request-failed':
+                    errorMessage = 'Network error. Please check your connection.';
+                    break;
+                default:
+                    errorMessage += error.message || 'Please try again.';
+            }
+        } else {
+            errorMessage += error.message || 'Please check your credentials.';
+        }
+
+        showMessage('loginMessage', errorMessage, 'danger');
 
     } finally {
         // Reset button
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
+
+        // Remove submitting class
+        if (loginForm) {
+            loginForm.classList.remove('submitting');
+        }
     }
 }
 
@@ -592,6 +669,7 @@ async function handleSignup(e) {
     const email = document.getElementById('signupEmail')?.value.trim();
     const password = document.getElementById('signupPassword')?.value.trim();
     const submitBtn = document.querySelector('#signupForm button[type="submit"]');
+    const signupForm = document.getElementById('signupForm');
 
     if (!submitBtn) return;
 
@@ -602,26 +680,26 @@ async function handleSignup(e) {
 
     try {
         // Check Firebase availability
-        if (typeof firebase === 'undefined') {
-            throw new Error('Authentication service not available');
-        }
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+            console.log('Firebase not available, using demo mode');
 
-        let userCredential;
+            const demoUser = await simulateSignup(name, email, password);
 
-        // Try Firebase v8 compatibility mode
-        if (firebase.auth && firebase.auth().createUserWithEmailAndPassword) {
-            userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
-        } else {
-            // Try Firebase v9 modular SDK
-            try {
-                const { getAuth, createUserWithEmailAndPassword } = firebase.auth;
-                const auth = getAuth();
-                userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            } catch (firebaseError) {
-                throw new Error('Firebase authentication failed. Please check configuration.');
+            localStorage.setItem('user', JSON.stringify(demoUser));
+            showMessage('signupMessage', 'Demo account created successfully! Redirecting...', 'success');
+
+            if (typeof window.updateAuthButton === 'function') {
+                window.updateAuthButton();
             }
+
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+            return;
         }
 
+        // Firebase signup
+        const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
         // Update profile with display name
@@ -643,15 +721,12 @@ async function handleSignup(e) {
             createdAt: new Date().toISOString()
         }));
 
-        // Show success message
         showMessage('signupMessage', 'Account created successfully! Redirecting...', 'success');
 
-        // Update auth button in main.js if available
         if (typeof window.updateAuthButton === 'function') {
             window.updateAuthButton();
         }
 
-        // Redirect after delay
         setTimeout(() => {
             window.location.href = 'index.html';
         }, 1500);
@@ -661,7 +736,6 @@ async function handleSignup(e) {
 
         let errorMessage = 'Signup failed. ';
 
-        // Handle specific Firebase errors
         if (error.code) {
             switch (error.code) {
                 case 'auth/email-already-in-use':
@@ -692,6 +766,11 @@ async function handleSignup(e) {
         // Reset button
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
+
+        // Remove submitting class
+        if (signupForm) {
+            signupForm.classList.remove('submitting');
+        }
     }
 }
 
@@ -702,18 +781,12 @@ async function resetPassword(email) {
     }
 
     try {
-        if (typeof firebase === 'undefined') {
-            throw new Error('Authentication service not available');
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+            showMessage('loginMessage', 'Password reset is not available in demo mode. Please use Firebase configuration.', 'warning');
+            return;
         }
 
-        if (firebase.auth && firebase.auth().sendPasswordResetEmail) {
-            await firebase.auth().sendPasswordResetEmail(email);
-        } else {
-            const { getAuth, sendPasswordResetEmail } = firebase.auth;
-            const auth = getAuth();
-            await sendPasswordResetEmail(auth, email);
-        }
-
+        await firebase.auth().sendPasswordResetEmail(email);
         showMessage('loginMessage', 'Password reset email sent! Check your inbox.', 'success');
 
     } catch (error) {
@@ -744,16 +817,19 @@ function showForgotPasswordModal() {
 // ===============================
 // AUTH STATE MANAGEMENT
 // ===============================
+
 function checkAuthState() {
     // Check if user is already logged in via localStorage
     const user = JSON.parse(localStorage.getItem('user') || 'null');
 
     if (user && user.email) {
-        // User is already logged in, redirect to home
-        showMessage('loginMessage', 'You are already logged in. Redirecting...', 'info');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 2000);
+        // User is already logged in, redirect to home only if on auth page
+        if (window.location.pathname.includes('auth.html')) {
+            showMessage('loginMessage', 'You are already logged in. Redirecting...', 'info');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        }
         return;
     }
 
@@ -779,6 +855,7 @@ function checkAuthState() {
 // ===============================
 // SIMULATED AUTH FOR DEMO (Fallback)
 // ===============================
+
 function simulateLogin(email, password) {
     return new Promise((resolve, reject) => {
         setTimeout(() => {
@@ -858,9 +935,40 @@ function simulateSignup(name, email, password) {
 }
 
 // ===============================
+// LOGOUT FUNCTION
+// ===============================
+
+function logout() {
+    // Clear all user data from localStorage
+    localStorage.removeItem('user');
+    localStorage.removeItem('demoUsers');
+
+    // Sign out from Firebase if available
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        firebase.auth().signOut().catch(err => console.log('Firebase signout error:', err));
+    }
+
+    // Update the auth button in the navbar
+    if (typeof window.updateAuthButton === 'function') {
+        window.updateAuthButton();
+    }
+
+    // Show notification
+    if (typeof window.showNotification === 'function') {
+        window.showNotification('Logged out successfully', 'info');
+    }
+
+    // Redirect to home page
+    setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 800);
+}
+
+// ===============================
 // EXPORT FUNCTIONS
 // ===============================
 window.showLoginForm = showLoginForm;
 window.showSignupForm = showSignupForm;
 window.validateLoginForm = validateLoginForm;
 window.validateSignupForm = validateSignupForm;
+window.logout = logout;
