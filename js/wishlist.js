@@ -150,7 +150,7 @@ function updateWishlistButtons() {
         } else {
             button.classList.remove('in-wishlist');
             button.innerHTML = '<i class="far fa-heart"></i>';
-            button.title = 'Add to wishlist';
+            // button.title = 'Add to wishlist';
         }
     });
 }
@@ -242,7 +242,7 @@ function renderWishlist() {
                                     data-title="${item.title}"
                                     data-price="${item.price}"
                                     data-image="${item.image}">
-                                <i class="fas fa-shopping-cart me-1"></i><span class="d-none d-sm-inline">Add to Cart</span>
+                                <i class="fas fa-shopping-cart me-1"></i><span class="d-none d-sm-inline">Cart</span>
                             </button>
                             <a href="product-details.html?id=${item.id}" class="btn btn-sm btn-outline-primary" title="View product details">
                                 <i class="fas fa-eye"></i>
