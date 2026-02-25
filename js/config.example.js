@@ -1,4 +1,6 @@
-const CONFIG = {
+window.API_BASE_URL = 'https://dummyjson.com';
+
+window.CONFIG = {
     FIREBASE: {
         apiKey: "your-real-key",
         authDomain: "your-real-domain",

@@ -179,7 +179,7 @@ function createCategoryCard(category) {
 }
 
 // ===============================
-// PRODUCT CARD TEMPLATE
+// PRODUCT CARD TEMPLATE - UPDATED WITH ALL DATA ATTRIBUTES
 // ===============================
 
 function createProductCard(product) {
@@ -193,6 +193,9 @@ function createProductCard(product) {
     const rating = product.rating || 0;
     const stock = product.stock || 0;
     const isInStock = stock > 0;
+
+    // Escape description for HTML attribute
+    const escapedDescription = (product.description || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
     return `
         <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
@@ -244,7 +247,7 @@ function createProductCard(product) {
                                 data-title="${product.title}"
                                 data-price="${product.price}"
                                 data-image="${image}"
-                                data-description="${product.description || ''}"
+                                data-description="${escapedDescription}"
                                 data-rating="${product.rating || 0}"
                                 data-discount="${product.discountPercentage || 0}"
                                 data-category="${product.category || 'General'}"
@@ -271,10 +274,12 @@ async function loadCategoryProducts() {
     // Try to get products from window.allProducts first
     if (window.allProducts && window.allProducts.length > 0) {
         categoryProducts = window.allProducts;
+        console.log(`[Categories] Using cached products: ${categoryProducts.length}`);
         return categoryProducts;
     }
 
     try {
+        console.log('[Categories] Loading all products...');
         const response = await fetch(`${API_URL}/products?limit=10000`);
 
         if (!response.ok) {
@@ -283,9 +288,31 @@ async function loadCategoryProducts() {
 
         const data = await response.json();
         categoryProducts = data.products || [];
+        console.log(`[Categories] Loaded ${categoryProducts.length} products`);
+        
         window.allProducts = categoryProducts; // Share with other modules
+        window.categoryProducts = categoryProducts;
+        
         return categoryProducts;
     } catch (error) {
+        console.error('[Categories] Error loading products:', error);
+        
+        // Try fetching just /products
+        try {
+            console.log('[Categories] Retrying with /products endpoint...');
+            const retryResponse = await fetch(`${API_URL}/products`);
+            if (retryResponse.ok) {
+                const retryData = await retryResponse.json();
+                categoryProducts = retryData.products || [];
+                window.allProducts = categoryProducts;
+                window.categoryProducts = categoryProducts;
+                console.log(`[Categories] Loaded ${categoryProducts.length} products on retry`);
+                return categoryProducts;
+            }
+        } catch (retryError) {
+            console.error('[Categories] Retry also failed:', retryError);
+        }
+        
         return [];
     }
 }
@@ -325,7 +352,7 @@ async function filterByCategory(category) {
     const productsSource = categoryProducts.length > 0 ? categoryProducts : (window.allProducts || []);
 
     // Filter products by category
-    const filtered = productsSource.filter(product =>
+    let filtered = productsSource.filter(product =>
         product.category && product.category.toLowerCase() === category.toLowerCase()
     );
 
@@ -385,9 +412,6 @@ function displayCategoryProducts(products) {
                         <i class="fas fa-info-circle me-2"></i>
                         <strong>${products.length}</strong> product${products.length !== 1 ? 's' : ''} found
                     </div>
-                    <button onclick="window.showAllCategories()" class="btn btn-sm btn-outline-info">
-                        <i class="fas fa-th me-1"></i> All Categories
-                    </button>
                 </div>
             </div>
         </div>
@@ -501,7 +525,7 @@ function handleAddToCart(e) {
 }
 
 // ===============================
-// WISHLIST FUNCTIONS
+// WISHLIST FUNCTIONS - UPDATED
 // ===============================
 
 function attachWishlistEventListeners() {
@@ -511,8 +535,10 @@ function attachWishlistEventListeners() {
     });
 
     // Update wishlist button states
-    if (typeof updateWishlistButtons === 'function') {
-        updateWishlistButtons();
+    if (typeof window.updateWishlistButtons === 'function') {
+        setTimeout(() => {
+            window.updateWishlistButtons();
+        }, 100);
     }
 }
 
@@ -521,33 +547,58 @@ function handleAddToWishlist(e) {
     e.stopPropagation();
 
     const button = e.currentTarget;
-    const productId = parseInt(button.dataset.id);
 
+    // Get ALL product details from data attributes
     const product = {
-        id: productId,
+        id: parseInt(button.dataset.id),
         title: button.dataset.title,
         price: parseFloat(button.dataset.price),
-        image: button.dataset.image
+        image: button.dataset.image,
+        thumbnail: button.dataset.image, // Add thumbnail for consistency
+        description: button.dataset.description || 'No description available',
+        rating: parseFloat(button.dataset.rating) || 0,
+        discountPercentage: parseFloat(button.dataset.discount) || 0,
+        category: button.dataset.category || 'General'
     };
 
+    // Visual feedback
+    const originalHtml = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+
     // Check if already in wishlist
-    if (typeof isInWishlist === 'function' && isInWishlist(productId)) {
-        if (typeof removeFromWishlist === 'function') {
-            removeFromWishlist(productId);
-            button.classList.remove('in-wishlist');
-            button.innerHTML = '<i class="far fa-heart"></i> Wishlist';
-            if (typeof updateWishlistCount === 'function') {
-                updateWishlistCount();
-            }
+    if (typeof window.isInWishlist === 'function' && window.isInWishlist(product.id)) {
+        if (typeof window.removeFromWishlist === 'function') {
+            window.removeFromWishlist(product.id);
+
+            setTimeout(() => {
+                button.classList.remove('in-wishlist');
+                button.innerHTML = '<i class="far fa-heart"></i>';
+                button.disabled = false;
+                if (typeof window.updateWishlistCount === 'function') {
+                    window.updateWishlistCount();
+                }
+                // Dispatch event for other components
+                window.dispatchEvent(new CustomEvent('wishlistUpdated'));
+            }, 300);
         }
     } else {
-        if (typeof addToWishlist === 'function') {
-            addToWishlist(product);
-            button.classList.add('in-wishlist');
-            button.innerHTML = '<i class="fas fa-heart"></i> Wishlist';
-            if (typeof updateWishlistCount === 'function') {
-                updateWishlistCount();
-            }
+        if (typeof window.addToWishlist === 'function') {
+            window.addToWishlist(product);
+
+            setTimeout(() => {
+                button.classList.add('in-wishlist');
+                button.innerHTML = '<i class="fas fa-heart"></i>';
+                button.disabled = false;
+                if (typeof window.updateWishlistCount === 'function') {
+                    window.updateWishlistCount();
+                }
+                // Dispatch event for other components
+                window.dispatchEvent(new CustomEvent('wishlistUpdated'));
+
+                // Show success notification
+                showNotification(`${product.title} added to wishlist!`, 'success');
+            }, 300);
         }
     }
 }
@@ -617,8 +668,6 @@ async function loadAllCategories() {
     }
 }
 
-
-
 // ===============================
 // INITIALIZATION
 // ===============================
@@ -648,86 +697,6 @@ function initializeHomePageCategories() {
 }
 
 // ===============================
-// EVENT LISTENERS
-// ===============================
-
-function attachCategoryEventListeners() {
-    // Attach cart button listeners
-    document.querySelectorAll('.add-to-cart-btn').forEach(button => {
-        button.removeEventListener('click', handleCategoryAddToCart);
-        button.addEventListener('click', handleCategoryAddToCart);
-    });
-
-    // Attach wishlist button listeners
-    document.querySelectorAll('.add-to-wishlist-btn').forEach(button => {
-        button.removeEventListener('click', handleCategoryAddToWishlist);
-        button.addEventListener('click', handleCategoryAddToWishlist);
-    });
-
-    // Update wishlist button states
-    if (typeof updateWishlistButtons === 'function') {
-        updateWishlistButtons();
-    }
-}
-
-function handleCategoryAddToWishlist(e) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const button = e.currentTarget;
-    const product = {
-        id: parseInt(button.dataset.id),
-        title: button.dataset.title,
-        price: parseFloat(button.dataset.price),
-        image: button.dataset.image,
-        description: button.dataset.description || '',
-        rating: parseFloat(button.dataset.rating) || 0,
-        discountPercentage: parseFloat(button.dataset.discount) || 0,
-        category: button.dataset.category || 'General',
-        thumbnail: button.dataset.image
-    };
-
-    // Check if already in wishlist
-    if (typeof isInWishlist === 'function' && isInWishlist(product.id)) {
-        if (typeof removeFromWishlist === 'function') {
-            removeFromWishlist(product.id);
-            button.classList.remove('in-wishlist');
-            button.innerHTML = '<i class="far fa-heart"></i>';
-            if (typeof updateWishlistCount === 'function') {
-                updateWishlistCount();
-            }
-        }
-    } else {
-        if (typeof addToWishlist === 'function') {
-            addToWishlist(product);
-            button.classList.add('in-wishlist');
-            button.innerHTML = '<i class="fas fa-heart"></i>';
-            if (typeof updateWishlistCount === 'function') {
-                updateWishlistCount();
-            }
-        }
-    }
-}
-
-function handleCategoryAddToCart(e) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const button = e.currentTarget;
-    const product = {
-        id: parseInt(button.dataset.id),
-        title: button.dataset.title,
-        price: parseFloat(button.dataset.price),
-        image: button.dataset.image,
-        category: button.dataset.category || 'General'
-    };
-
-    if (typeof addToCart === 'function') {
-        addToCart(product, 1);
-    }
-}
-
-// ===============================
 // PAGE INITIALIZATION
 // ===============================
 
@@ -749,9 +718,6 @@ function initializePage() {
     } else if (page === 'categories.html') {
         initializeCategoriesPage();
     }
-    
-    // Attach event listeners for wishlist and cart buttons
-    attachCategoryEventListeners();
 }
 
 // ===============================
@@ -763,7 +729,8 @@ window.showAllCategories = showAllCategories;
 window.loadAllCategories = loadAllCategories;
 window.formatCategoryName = formatCategoryName;
 window.initializeCategoriesPage = initializeCategoriesPage;
-window.formatPrice = formatPrice; // Export the fixed version
+window.formatPrice = formatPrice;
+window.handleAddToWishlist = handleAddToWishlist; // Export for debugging if needed
 
 // ===============================
 // ADD CSS STYLES
@@ -811,6 +778,17 @@ if (!document.getElementById('category-styles')) {
         
         #categoryProducts {
             animation: fadeIn 0.3s ease-out;
+        }
+        
+        .add-to-wishlist-btn.in-wishlist {
+            background-color: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+        
+        .add-to-wishlist-btn.in-wishlist:hover {
+            background-color: #bb2d3b;
+            border-color: #b02a37;
         }
     `;
     document.head.appendChild(style);

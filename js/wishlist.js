@@ -92,11 +92,12 @@ function addToWishlist(product) {
         id: product.id,
         title: product.title || 'Unknown Product',
         price: parseFloat(product.price) || 0,
-        image: product.thumbnail || product.image || 'https://via.placeholder.com/200',
+        image: product.image || product.thumbnail || 'https://via.placeholder.com/200',
+        thumbnail: product.thumbnail || product.image || 'https://via.placeholder.com/200',
         category: product.category || 'General',
-        rating: product.rating || 0,
+        rating: parseFloat(product.rating) || 0,
         description: product.description || '',
-        discountPercentage: product.discountPercentage || 0,
+        discountPercentage: parseFloat(product.discountPercentage) || 0,
         addedDate: new Date().toISOString()
     });
 
@@ -110,7 +111,6 @@ function addToWishlist(product) {
 
 function removeFromWishlist(productId) {
     const initialLength = wishlist.length;
-    const product = wishlist.find(item => item.id === productId);
     wishlist = wishlist.filter(item => item.id !== productId);
 
     if (wishlist.length < initialLength) {
@@ -150,7 +150,7 @@ function updateWishlistButtons() {
         } else {
             button.classList.remove('in-wishlist');
             button.innerHTML = '<i class="far fa-heart"></i>';
-            // button.title = 'Add to wishlist';
+            button.title = 'Add to wishlist';
         }
     });
 }
@@ -197,12 +197,14 @@ function renderWishlist() {
         if (!item || !item.id) return;
 
         const rating = item.rating || 0;
+        const description = item.description || 'No description available';
+        const descriptionText = description.substring(0, 60) + (description.length > 60 ? '...' : '');
 
         html += `
             <div class="col-xl-3 col-lg-3 col-md-4 col-sm-6 col-xs-6 mb-4">
                 <div class="card product-card h-100 border-0 shadow-sm transition-all">
                     <div class="product-image-container position-relative overflow-hidden" style="background: #f8f9fa; height: 250px;">
-                        <img src="${item.image || 'https://via.placeholder.com/300'}" 
+                        <img src="${item.image || item.thumbnail || 'https://via.placeholder.com/300'}" 
                              class="card-img-top product-img" 
                              alt="${item.title}"
                              onerror="this.src='https://via.placeholder.com/300'"
@@ -217,17 +219,17 @@ function renderWishlist() {
                     </div>
                     <div class="card-body d-flex flex-column">
                         <h6 class="card-title fw-bold text-truncate" title="${item.title}">${item.title}</h6>
-                        <p class="card-text text-muted small flex-grow-1" style="line-height: 1.4;">${item.description.substring(0, 60)}${item.description.length > 60 ? '...' : ''}</p>
+                        <p class="card-text text-muted small flex-grow-1" style="line-height: 1.4;">${descriptionText}</p>
                         <div class="d-flex align-items-center mb-2">
                             <div class="text-warning small">
-                                ${generateStarRating(rating)}
+                                ${generateStarRating(parseFloat(rating))}
                             </div>
-                            <small class="text-muted ms-1">(${rating.toFixed(1)})</small>
+                            <small class="text-muted ms-1">(${parseFloat(rating).toFixed(1)})</small>
                         </div>
                         <div class="d-flex align-items-center gap-2 mt-auto mb-3 flex-wrap">
                             ${item.discountPercentage ? `
                                 <span class="text-muted product-old-price" style="text-decoration: line-through;">
-                                    ₹${(item.price / (1 - item.discountPercentage / 100) || 0).toFixed(2)}
+                                    ₹${((item.price / (1 - item.discountPercentage / 100)) || 0).toFixed(2)}
                                 </span>
                                 <span class="text-primary fw-bold fs-6">₹${(item.price || 0).toFixed(2)}</span>
                                 <span class="badge bg-danger">-${Math.round(item.discountPercentage)}%</span>
@@ -241,7 +243,7 @@ function renderWishlist() {
                                     data-id="${item.id}"
                                     data-title="${item.title}"
                                     data-price="${item.price}"
-                                    data-image="${item.image}">
+                                    data-image="${item.image || item.thumbnail}">
                                 <i class="fas fa-shopping-cart me-1"></i><span class="d-none d-sm-inline">Cart</span>
                             </button>
                             <a href="product-details.html?id=${item.id}" class="btn btn-sm btn-outline-primary" title="View product details">
@@ -333,3 +335,4 @@ window.clearWishlist = clearWishlist;
 window.loadWishlist = loadWishlist;
 window.saveWishlist = saveWishlist;
 window.addToCartFromWishlist = addToCartFromWishlist;
+window.renderWishlist = renderWishlist; // Export for use in categories.js

@@ -1,12 +1,12 @@
+// products.js
 
-// API Base URL
+// API Base URL - use window property to avoid redeclaration
 if (typeof window.API_BASE_URL === 'undefined') {
     window.API_BASE_URL = 'https://dummyjson.com';
 }
-const API_BASE_URL = window.API_BASE_URL;
 
-// Global variables
-let allProducts = [];
+// Global variables - use unique names
+let productsAllProducts = [];
 let filteredProducts = [];
 
 // ===============================
@@ -349,7 +349,7 @@ function renderProducts(products) {
     // Update results count
     const resultsCount = document.getElementById('resultsCount');
     if (resultsCount) {
-        resultsCount.textContent = `Showing ${products.length} of ${allProducts.length} products`;
+        resultsCount.textContent = `Showing ${products.length} of ${productsAllProducts.length} products`;
     }
 
     // Render all products at once to prevent multiple renders
@@ -393,8 +393,8 @@ function handleAddToCart(e) {
     const button = e.currentTarget;
     const productId = parseInt(button.dataset.id);
 
-    // Try to find product in allProducts
-    let product = allProducts.find(p => p.id === productId);
+    // Try to find product in productsAllProducts
+    let product = productsAllProducts.find(p => p.id === productId);
 
     // If not found, create from data attributes
     if (!product) {
@@ -436,8 +436,8 @@ function handleAddToWishlist(e) {
     const button = e.currentTarget;
     const productId = parseInt(button.dataset.id);
 
-    // Try to find product in allProducts
-    let product = allProducts.find(p => p.id === productId);
+    // Try to find product in productsAllProducts
+    let product = productsAllProducts.find(p => p.id === productId);
 
     // If not found, create from data attributes
     if (!product) {
@@ -502,7 +502,7 @@ function filterProducts() {
     const sortBy = document.getElementById('sortFilter')?.value || 'default';
 
     // Apply filters
-    filteredProducts = allProducts.filter(product => {
+    filteredProducts = productsAllProducts.filter(product => {
         // Category filter
         if (category !== 'all' && product.category !== category) {
             return false;
@@ -555,10 +555,10 @@ function sortProducts(products, sortBy) {
 
 function populateCategories() {
     const categorySelect = document.getElementById('categoryFilter');
-    if (!categorySelect || allProducts.length === 0) return;
+    if (!categorySelect || productsAllProducts.length === 0) return;
 
     // Get unique categories
-    const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+    const categories = [...new Set(productsAllProducts.map(p => p.category).filter(Boolean))];
 
     // Clear existing options (keep "All Categories")
     categorySelect.innerHTML = '<option value="all">All Categories</option>';
@@ -626,32 +626,55 @@ async function loadAllProducts() {
     showLoading(container);
 
     try {
-        console.log('Loading products from API...');
-        const response = await fetch(`${API_BASE_URL}/products?limit=10000`);
+        console.log('[v0] Loading products from API...');
+        const response = await fetch(`${window.API_BASE_URL}/products?limit=10000`);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        allProducts = data.products;
-        filteredProducts = [...allProducts];
+        productsAllProducts = data.products || [];
+        filteredProducts = [...productsAllProducts];
 
-        // Make products available globally for other modules
-        window.allProducts = allProducts;
+        // Make products available globally for other modules with a unique name
+        window.productsAllProducts = productsAllProducts;
+        window.allProducts = productsAllProducts; // Also store as allProducts for compatibility
 
-        console.log(`Loaded ${allProducts.length} products`);
+        console.log(`[v0] Loaded ${productsAllProducts.length} products`);
 
         // Initialize filters
         populateCategories();
         setupFilters();
 
         // Render all products
-        renderProducts(allProducts);
+        renderProducts(productsAllProducts);
 
     } catch (error) {
-        console.error('Error loading products:', error);
-        showError(container, 'Failed to load products. Please check your connection.');
+        console.error('[v0] Error loading products, retrying...', error);
+        
+        // Retry with basic endpoint
+        try {
+            console.log('[v0] Retrying with /products endpoint...');
+            const retryResponse = await fetch(`${window.API_BASE_URL}/products`);
+            if (retryResponse.ok) {
+                const retryData = await retryResponse.json();
+                productsAllProducts = retryData.products || [];
+                filteredProducts = [...productsAllProducts];
+                window.productsAllProducts = productsAllProducts;
+                window.allProducts = productsAllProducts;
+                
+                console.log(`[v0] Loaded ${productsAllProducts.length} products on retry`);
+                populateCategories();
+                setupFilters();
+                renderProducts(productsAllProducts);
+            } else {
+                throw new Error('Retry failed');
+            }
+        } catch (retryError) {
+            console.error('[v0] Retry failed:', retryError);
+            showError(container, 'Failed to load products. Please check your connection.');
+        }
     }
 }
 
@@ -672,7 +695,7 @@ async function loadLatestProducts() {
 
     try {
         console.log('[v0] Fetching latest products...');
-        const response = await fetch(`${API_BASE_URL}/products?limit=100`);
+        const response = await fetch(`${window.API_BASE_URL}/products?limit=100`);
         if (!response.ok) throw new Error('Failed to load products');
 
         const data = await response.json();
@@ -734,7 +757,7 @@ async function loadProductDetails() {
     showLoading(container);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/products/${productId}`);
+        const response = await fetch(`${window.API_BASE_URL}/products/${productId}`);
         if (!response.ok) throw new Error('Product not found');
 
         const product = await response.json();
@@ -972,7 +995,7 @@ async function loadRelatedProducts(category) {
     if (!container || !category) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/products/category/${encodeURIComponent(category)}?limit=8`);
+        const response = await fetch(`${window.API_BASE_URL}/products/category/${encodeURIComponent(category)}?limit=8`);
         if (!response.ok) return;
 
         const data = await response.json();
@@ -1143,7 +1166,7 @@ window.filterProducts = filterProducts;
 window.addToCart = addToCart;
 window.formatPrice = formatPrice;
 window.renderProducts = renderProducts;
-window.allProducts = allProducts;
+window.productsAllProducts = productsAllProducts;
 window.updateMainImage = updateMainImage;
 window.initializeZoom = initializeZoom;
 

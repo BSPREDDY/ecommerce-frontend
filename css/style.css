@@ -46,7 +46,10 @@ body {
     padding-top: 80px;
     min-height: 100vh;
     display: flex;
-    flex-direction: column
+    flex-direction: column;
+    margin: 0;
+    margin-left: 0;
+    margin-right: 0;
 }
 
 @keyframes fadeIn {
@@ -677,7 +680,7 @@ body {
     margin-top: -80px;
     padding-top: 120px;
     padding-bottom: 80px;
-    overflow: hidden
+    overflow: hidden;
 }
 
 .hero-background {
