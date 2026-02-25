@@ -23,6 +23,92 @@
     text-align: center
 }
 
+/* Mobile S (320px) styles */
+@media screen and (max-width: 320px) {
+    .auth-container {
+        padding: 10px;
+        padding-top: 70px;
+    }
+
+    .auth-header {
+        padding: 20px 15px 15px;
+    }
+
+    .auth-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .auth-header p {
+        font-size: 0.85rem;
+    }
+
+    .auth-form-container {
+        padding: 0 15px 20px;
+    }
+
+    .form-group label {
+        font-size: 0.85rem;
+        margin-bottom: 5px;
+    }
+
+    .form-control {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+
+    .toggle-password {
+        right: 8px;
+        padding: 3px;
+        font-size: 0.9rem;
+    }
+
+    .error-message {
+        font-size: 0.75rem;
+    }
+
+    .message {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        margin-bottom: 15px;
+    }
+
+    .form-remember {
+        flex-direction: row;
+        gap: 10px;
+        align-items: flex-start;
+        margin-bottom: 15px;
+    }
+
+    .remember-me {
+        font-size: 0.85rem;
+    }
+
+    .forgot-password {
+        font-size: 0.85rem;
+    }
+
+    .auth-btn {
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+
+    .form-switch {
+        font-size: 0.85rem;
+    }
+
+    .switch-btn {
+        font-size: 0.85rem;
+    }
+
+    .password-requirements {
+        font-size: 0.7rem;
+    }
+
+    .password-requirements span {
+        margin: 1px 0;
+    }
+}
+
 .auth-header h2 {
     margin: 0;
     color: #333;
@@ -215,4 +301,18 @@
 
 .password-requirements span {
     margin: 2px 0
+}
+
+/* Specific adjustment for Mobile S (320px) */
+@media screen and (max-width: 320px) {
+    .form-switch {
+        display: flex;
+        flex-direction: row;
+        gap: 3px;
+        font-size: 0.8rem;
+    }
+
+    .switch-btn {
+        font-size: 0.8rem;
+    }
 }

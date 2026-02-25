@@ -1,12 +1,13 @@
+// config.template.js
 window.API_BASE_URL = 'https://dummyjson.com';
 
 window.CONFIG = {
     FIREBASE: {
-        apiKey: "your-real-key",
-        authDomain: "your-real-domain",
-        projectId: "your-project-id",
-        storageBucket: "your-storage-bucket",
-        messagingSenderId: "your-id",
-        appId: "your-app-id"
+        apiKey: "FIREBASE_API_KEY_PLACEHOLDER",
+        authDomain: "FIREBASE_AUTH_DOMAIN_PLACEHOLDER",
+        projectId: "FIREBASE_PROJECT_ID_PLACEHOLDER",
+        storageBucket: "FIREBASE_STORAGE_BUCKET_PLACEHOLDER",
+        messagingSenderId: "FIREBASE_MESSAGING_SENDER_ID_PLACEHOLDER",
+        appId: "FIREBASE_APP_ID_PLACEHOLDER"
     }
 };
