@@ -5,6 +5,7 @@
 
 // Wait for Firebase to be ready before initializing auth
 let firebaseReady = false;
+let authInitialized = false;
 
 // Check if Firebase is available and initialized
 function isFirebaseReady() {
@@ -13,9 +14,24 @@ function isFirebaseReady() {
         firebase.apps.length > 0;
 }
 
+// Check if Firebase Auth is available
+function isFirebaseAuthReady() {
+    return isFirebaseReady() &&
+        typeof firebase.auth === 'function' &&
+        firebase.auth() !== null;
+}
+
 // Initialize auth when Firebase is ready
 function initAuth() {
     if (!document.querySelector('.auth-container')) return;
+
+    // Prevent multiple initializations
+    if (authInitialized) {
+        console.log('Auth already initialized');
+        return;
+    }
+
+    console.log('🔐 Initializing auth module...');
 
     // Check if Firebase is ready
     if (!isFirebaseReady()) {
@@ -23,26 +39,30 @@ function initAuth() {
 
         // Listen for Firebase ready event
         document.addEventListener('firebase-ready', function () {
-            console.log('✅ Firebase ready, initializing auth...');
+            console.log('✅ Firebase ready event received, initializing auth...');
             setupAuth();
+            authInitialized = true;
         });
 
         // Listen for Firebase error event
         document.addEventListener('firebase-error', function (e) {
             console.warn('⚠️ Firebase error, running in demo mode:', e.detail.error);
             setupAuth(); // Setup auth for demo mode
+            authInitialized = true;
         });
 
         // Also check after a delay as fallback
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
             if (isFirebaseReady()) {
                 console.log('✅ Firebase ready (timeout check), initializing auth...');
                 setupAuth();
+                authInitialized = true;
             } else {
                 console.log('⚠️ Firebase not available after timeout, running in demo mode');
                 setupAuth(); // Still setup auth for demo mode
+                authInitialized = true;
             }
-        }, 2000);
+        }, 3000);
 
         return;
     }
@@ -50,10 +70,13 @@ function initAuth() {
     // Firebase is ready now
     console.log('✅ Firebase ready immediately, initializing auth...');
     setupAuth();
+    authInitialized = true;
 }
 
 // Main auth setup function
 function setupAuth() {
+    console.log('🔧 Setting up auth forms...');
+
     // Form elements
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
@@ -66,14 +89,12 @@ function setupAuth() {
 
     // Form toggle - Show signup form (click on "Sign Up" button from login form)
     if (loginToggleBtn) {
-        // Remove any existing listeners first
         loginToggleBtn.removeEventListener('click', showSignupFormHandler);
         loginToggleBtn.addEventListener('click', showSignupFormHandler);
     }
 
     // Form toggle - Show login form (click on "Login" button from signup form)
     if (signupToggleBtn) {
-        // Remove any existing listeners first
         signupToggleBtn.removeEventListener('click', showLoginFormHandler);
         signupToggleBtn.addEventListener('click', showLoginFormHandler);
     }
@@ -99,14 +120,12 @@ function setupAuth() {
 
     // Form submission with validation - LOGIN
     if (loginForm) {
-        // Remove any existing submit listeners
         loginForm.removeEventListener('submit', handleLoginSubmit);
         loginForm.addEventListener('submit', handleLoginSubmit);
     }
 
     // Form submission with validation - SIGNUP
     if (signupForm) {
-        // Remove any existing submit listeners
         signupForm.removeEventListener('submit', handleSignupSubmit);
         signupForm.addEventListener('submit', handleSignupSubmit);
     }
@@ -127,10 +146,17 @@ function setupAuth() {
     if (window.history.replaceState) {
         window.history.replaceState(null, null, window.location.href);
     }
+
+    console.log('✅ Auth setup complete');
 }
 
 // Start the initialization process
-document.addEventListener('DOMContentLoaded', initAuth);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAuth);
+} else {
+    // DOM already loaded, initialize immediately
+    initAuth();
+}
 
 // ===============================
 // EVENT HANDLERS
@@ -245,7 +271,6 @@ function setupPasswordToggles() {
     const togglePasswordBtns = document.querySelectorAll('.toggle-password');
 
     togglePasswordBtns.forEach(btn => {
-        // Remove existing listeners
         btn.removeEventListener('click', togglePassword);
         btn.addEventListener('click', togglePassword);
     });
@@ -615,9 +640,18 @@ async function handleLogin(e) {
     submitBtn.disabled = true;
 
     try {
+        // Log Firebase status for debugging
+        console.log('🔍 Firebase status:', {
+            firebaseExists: typeof firebase !== 'undefined',
+            firebaseApps: firebase?.apps?.length,
+            firebaseAuth: typeof firebase?.auth === 'function',
+            configLoaded: !!window.CONFIG,
+            apiKey: window.CONFIG?.FIREBASE?.apiKey?.substring(0, 10) + '...'
+        });
+
         // Check Firebase availability and initialization
         if (typeof firebase === 'undefined' || !firebase.auth || !isFirebaseReady()) {
-            console.log('Using demo login mode');
+            console.log('🎭 Using demo login mode (Firebase not available)');
 
             // Demo login
             const user = {
@@ -628,7 +662,7 @@ async function handleLogin(e) {
             };
 
             localStorage.setItem('user', JSON.stringify(user));
-            showMessage('loginMessage', 'Login successful! Redirecting...', 'success');
+            showMessage('loginMessage', 'Demo login successful! Redirecting...', 'success');
 
             if (typeof window.updateAuthButton === 'function') {
                 window.updateAuthButton();
@@ -640,9 +674,12 @@ async function handleLogin(e) {
             return;
         }
 
-        // Firebase login
+        // Try Firebase login
+        console.log('🔥 Attempting Firebase login...');
         const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
+
+        console.log('✅ Firebase login successful for:', user.email);
 
         // Store user info
         localStorage.setItem('user', JSON.stringify({
@@ -663,9 +700,37 @@ async function handleLogin(e) {
         }, 1000);
 
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('❌ Login error:', error);
 
         let errorMessage = 'Login failed. ';
+
+        // Check if it's an API key error
+        if (error.message?.includes('api-key-not-valid') || error.code === 'auth/api-key-not-valid') {
+            console.error('🚨 API Key is invalid! Please check your Firebase configuration.');
+            errorMessage = 'Firebase configuration error. Using demo mode instead.';
+
+            // Fallback to demo mode on API key error
+            console.log('🎭 Falling back to demo login mode due to API key error');
+            const user = {
+                uid: 'demo-' + Date.now(),
+                email: email,
+                displayName: email.split('@')[0],
+                isDemo: true,
+                lastLogin: new Date().toISOString()
+            };
+
+            localStorage.setItem('user', JSON.stringify(user));
+            showMessage('loginMessage', 'Demo login successful! Redirecting...', 'success');
+
+            if (typeof window.updateAuthButton === 'function') {
+                window.updateAuthButton();
+            }
+
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
+            return;
+        }
 
         if (error.code) {
             switch (error.code) {
@@ -725,7 +790,7 @@ async function handleSignup(e) {
     try {
         // Check Firebase availability and initialization
         if (typeof firebase === 'undefined' || !firebase.auth || !isFirebaseReady()) {
-            console.log('Using demo signup mode');
+            console.log('🎭 Using demo signup mode (Firebase not available)');
 
             const demoUser = await simulateSignup(name, email, password);
 
@@ -742,7 +807,8 @@ async function handleSignup(e) {
             return;
         }
 
-        // Firebase signup
+        // Try Firebase signup
+        console.log('🔥 Attempting Firebase signup...');
         const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
@@ -752,6 +818,7 @@ async function handleSignup(e) {
                 await user.updateProfile({
                     displayName: name
                 });
+                console.log('✅ User profile updated with name:', name);
             }
         } catch (profileError) {
             console.warn('Could not update profile:', profileError);
@@ -776,7 +843,14 @@ async function handleSignup(e) {
         }, 1500);
 
     } catch (error) {
-        console.error('Signup error:', error);
+        console.error('❌ Signup error:', error);
+
+        // Check if it's an API key error
+        if (error.message?.includes('api-key-not-valid') || error.code === 'auth/api-key-not-valid') {
+            console.error('🚨 API Key is invalid! Please check your Firebase configuration.');
+            showMessage('signupMessage', 'Firebase configuration error. Please check your API key.', 'danger');
+            return;
+        }
 
         let errorMessage = 'Signup failed. ';
 
@@ -869,6 +943,7 @@ function checkAuthState() {
     if (user && user.email) {
         // User is already logged in, redirect to home only if on auth page
         if (window.location.pathname.includes('auth.html')) {
+            console.log('👤 User already logged in:', user.email);
             showMessage('loginMessage', 'You are already logged in. Redirecting...', 'info');
             setTimeout(() => {
                 window.location.href = 'index.html';
@@ -880,17 +955,20 @@ function checkAuthState() {
     // If Firebase is available and ready, also check Firebase auth state
     if (isFirebaseReady() && firebase.auth) {
         firebase.auth().onAuthStateChanged(function (firebaseUser) {
-            if (firebaseUser && window.location.pathname.includes('auth.html')) {
-                // Firebase user is logged in, but not in localStorage
-                localStorage.setItem('user', JSON.stringify({
-                    uid: firebaseUser.uid,
-                    email: firebaseUser.email,
-                    displayName: firebaseUser.displayName
-                }));
+            if (firebaseUser) {
+                console.log('👤 Firebase user detected:', firebaseUser.email);
+                if (window.location.pathname.includes('auth.html')) {
+                    // Firebase user is logged in, but not in localStorage
+                    localStorage.setItem('user', JSON.stringify({
+                        uid: firebaseUser.uid,
+                        email: firebaseUser.email,
+                        displayName: firebaseUser.displayName
+                    }));
 
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1000);
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                }
             }
         });
     }
