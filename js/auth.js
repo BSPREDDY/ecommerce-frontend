@@ -3,10 +3,57 @@
 // Authentication with proper validation
 // ===============================
 
-document.addEventListener('DOMContentLoaded', function () {
-    // Check if on auth page
+// Wait for Firebase to be ready before initializing auth
+let firebaseReady = false;
+
+// Check if Firebase is available and initialized
+function isFirebaseReady() {
+    return typeof firebase !== 'undefined' &&
+        firebase.apps &&
+        firebase.apps.length > 0;
+}
+
+// Initialize auth when Firebase is ready
+function initAuth() {
     if (!document.querySelector('.auth-container')) return;
 
+    // Check if Firebase is ready
+    if (!isFirebaseReady()) {
+        console.log('⏳ Waiting for Firebase to be ready...');
+
+        // Listen for Firebase ready event
+        document.addEventListener('firebase-ready', function () {
+            console.log('✅ Firebase ready, initializing auth...');
+            setupAuth();
+        });
+
+        // Listen for Firebase error event
+        document.addEventListener('firebase-error', function (e) {
+            console.warn('⚠️ Firebase error, running in demo mode:', e.detail.error);
+            setupAuth(); // Setup auth for demo mode
+        });
+
+        // Also check after a delay as fallback
+        setTimeout(() => {
+            if (isFirebaseReady()) {
+                console.log('✅ Firebase ready (timeout check), initializing auth...');
+                setupAuth();
+            } else {
+                console.log('⚠️ Firebase not available after timeout, running in demo mode');
+                setupAuth(); // Still setup auth for demo mode
+            }
+        }, 2000);
+
+        return;
+    }
+
+    // Firebase is ready now
+    console.log('✅ Firebase ready immediately, initializing auth...');
+    setupAuth();
+}
+
+// Main auth setup function
+function setupAuth() {
     // Form elements
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
@@ -80,7 +127,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (window.history.replaceState) {
         window.history.replaceState(null, null, window.location.href);
     }
-});
+}
+
+// Start the initialization process
+document.addEventListener('DOMContentLoaded', initAuth);
 
 // ===============================
 // EVENT HANDLERS
@@ -565,8 +615,9 @@ async function handleLogin(e) {
     submitBtn.disabled = true;
 
     try {
-        // Check Firebase availability
-        if (typeof firebase === 'undefined' || !firebase.auth) {
+        // Check Firebase availability and initialization
+        if (typeof firebase === 'undefined' || !firebase.auth || !isFirebaseReady()) {
+            console.log('Using demo login mode');
 
             // Demo login
             const user = {
@@ -672,8 +723,9 @@ async function handleSignup(e) {
     submitBtn.disabled = true;
 
     try {
-        // Check Firebase availability
-        if (typeof firebase === 'undefined' || !firebase.auth) {
+        // Check Firebase availability and initialization
+        if (typeof firebase === 'undefined' || !firebase.auth || !isFirebaseReady()) {
+            console.log('Using demo signup mode');
 
             const demoUser = await simulateSignup(name, email, password);
 
@@ -773,7 +825,7 @@ async function resetPassword(email) {
     }
 
     try {
-        if (typeof firebase === 'undefined' || !firebase.auth) {
+        if (typeof firebase === 'undefined' || !firebase.auth || !isFirebaseReady()) {
             showMessage('loginMessage', 'Password reset is not available in demo mode. Please use Firebase configuration.', 'warning');
             return;
         }
@@ -825,8 +877,8 @@ function checkAuthState() {
         return;
     }
 
-    // If Firebase is available, also check Firebase auth state
-    if (typeof firebase !== 'undefined' && firebase.auth) {
+    // If Firebase is available and ready, also check Firebase auth state
+    if (isFirebaseReady() && firebase.auth) {
         firebase.auth().onAuthStateChanged(function (firebaseUser) {
             if (firebaseUser && window.location.pathname.includes('auth.html')) {
                 // Firebase user is logged in, but not in localStorage
@@ -935,8 +987,8 @@ function logout() {
     localStorage.removeItem('user');
     localStorage.removeItem('demoUsers');
 
-    // Sign out from Firebase if available
-    if (typeof firebase !== 'undefined' && firebase.auth) {
+    // Sign out from Firebase if available and ready
+    if (isFirebaseReady() && firebase.auth) {
         firebase.auth().signOut().catch(err => console.log('Firebase signout error:', err));
     }
 
